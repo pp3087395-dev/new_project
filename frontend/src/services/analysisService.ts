@@ -113,7 +113,7 @@ export const analysisService = {
         throw new Error(errMessage);
       }
 
-      if (onProgress) onProgress(80, 'Processing 2D-FFT log-magnitude spectrum and EXIF headers...');
+      if (onProgress) onProgress(80, 'Running Vision Transformer inference and 2D-FFT spectrum...');
       const backendData = await response.json();
 
       if (onProgress) onProgress(100, 'Forensics analysis complete!');
@@ -121,49 +121,130 @@ export const analysisService = {
       const dimensions = backendData.metadata_analysis.dimensions;
       const energy = backendData.frequency_analysis.energy_distribution;
       const exifCount = Object.keys(backendData.metadata_analysis.exif_data || {}).length;
+      const rawAi = backendData.ai_classification;
+
+      const aiClassification = rawAi ? {
+        modelId: rawAi.model_id,
+        modelName: rawAi.model_name,
+        modelVersion: rawAi.model_version,
+        status: rawAi.status as 'success' | 'unavailable' | 'error',
+        predictedClass: rawAi.predicted_class,
+        predictedLabelDescription: rawAi.predicted_label_description,
+        confidenceScore: rawAi.confidence_score,
+        scores: rawAi.scores,
+        rawLogits: rawAi.raw_logits,
+        calibrationStatement: rawAi.calibration_statement,
+        scopeLimitation: rawAi.scope_limitation,
+        inferenceTimeMs: rawAi.inference_time_ms,
+        errorMessage: rawAi.error_message
+      } : undefined;
+
+      let resultCategory: ResultCategory = 'forensic_signal_analysis';
+      let confidenceScore: number | null = null;
+      let confidenceRationale = '';
+
+      if (aiClassification && aiClassification.status === 'success') {
+        if (aiClassification.predictedClass === 'FAKE') {
+          resultCategory = 'potentially_manipulated';
+        } else if (aiClassification.predictedClass === 'REAL') {
+          resultCategory = 'no_strong_signs';
+        }
+        confidenceScore = aiClassification.confidenceScore ?? null;
+        confidenceRationale = `Vision Transformer Classification: Predicted ${aiClassification.predictedClass} with ${confidenceScore}% model activation. Note: scores represent softmax relative output strength and are not calibrated Bayesian probabilities.`;
+      } else if (aiClassification && aiClassification.status === 'unavailable') {
+        resultCategory = 'forensic_signal_analysis';
+        confidenceScore = null;
+        confidenceRationale = `AI Classification model unavailable (${aiClassification.errorMessage || 'offline'}). Deterministic 2D-FFT and metadata inspection completed successfully.`;
+      } else if (aiClassification && aiClassification.status === 'error') {
+        resultCategory = 'forensic_signal_analysis';
+        confidenceScore = null;
+        confidenceRationale = `Inference error: ${aiClassification.errorMessage}. No synthetic prediction generated.`;
+      } else {
+        resultCategory = 'forensic_signal_analysis';
+        confidenceScore = null;
+        confidenceRationale = 'Confidence score withheld: Pretrained AI classification model is not connected.';
+      }
 
       // Construct genuine evidence items from real backend computations
-      const evidence: EvidenceItem[] = [
-        {
-          id: 'ev-fft-energy',
-          title: '2D-FFT Radial Spectral Energy Distribution',
-          category: 'frequency_domain',
-          severity: 'info',
-          score: Math.round(energy.high_frequency_pct),
-          summary: `Low Freq (Core): ${energy.low_frequency_pct}%, Mid Freq: ${energy.mid_frequency_pct}%, High Freq: ${energy.high_frequency_pct}%`,
-          details: `The 2D Fast Fourier Transform decomposed the ${dimensions.width}×${dimensions.height} image into its spatial frequency components. The center of the spectrum represents baseline luminance, while radial dispersion represents edge transitions and micro-texture grain.`,
-          visualCue: 'Computed 2D-FFT magnitude spectrum displayed in the Media Inspector.',
-          isDemonstrationOnly: false
-        },
-        {
-          id: 'ev-exif-headers',
-          title: backendData.metadata_analysis.has_exif 
-            ? `Embedded EXIF Metadata Detected (${exifCount} tags)` 
-            : 'EXIF Metadata Stripped or Absent',
-          category: 'metadata_compression',
-          severity: backendData.metadata_analysis.has_exif ? 'clean' : 'medium',
-          score: backendData.metadata_analysis.has_exif ? 10 : 65,
-          summary: backendData.metadata_analysis.has_exif
-            ? `Found camera/software tags: ${Object.keys(backendData.metadata_analysis.exif_data).slice(0, 3).join(', ')}...`
-            : 'No EXIF metadata container found. Standard for social messaging apps or AI image generation tools.',
-          details: backendData.metadata_analysis.missing_metadata.join(' • '),
-          visualCue: 'See full metadata breakdown table below.',
-          isDemonstrationOnly: false
-        },
-        {
-          id: 'ev-resolution-spec',
-          title: `Resolution & Color Space: ${dimensions.width} × ${dimensions.height} (${backendData.metadata_analysis.color_mode})`,
+      const evidence: EvidenceItem[] = [];
+
+      // 1. AI Model Evidence (if present)
+      if (aiClassification && aiClassification.status === 'success') {
+        const fakePct = aiClassification.scores?.FAKE ? (aiClassification.scores.FAKE * 100).toFixed(1) : '0';
+        const realPct = aiClassification.scores?.REAL ? (aiClassification.scores.REAL * 100).toFixed(1) : '0';
+        evidence.push({
+          id: 'ev-ai-classifier',
+          title: `Pretrained ViT Classification: ${aiClassification.predictedClass === 'FAKE' ? 'Synthetic / AI-Generated' : 'Authentic / Real-World'}`,
           category: 'spatial_artifacts',
-          severity: dimensions.total_pixels < 250000 ? 'medium' : 'clean',
-          score: dimensions.total_pixels < 250000 ? 50 : 15,
-          summary: `Aspect Ratio: ${dimensions.aspect_ratio} • Total Pixel Count: ${dimensions.total_pixels.toLocaleString()} px.`,
-          details: dimensions.total_pixels < 250000
-            ? 'Sub-pixel density is relatively low. Fine generative artifacts can be masked by low pixel counts.'
-            : 'Resolution is sufficient for standard spatial and frequency forensic inspection.',
-          visualCue: 'Spatial boundaries verified by Pillow decoder.',
+          severity: aiClassification.predictedClass === 'FAKE' ? 'high' : 'clean',
+          score: Math.round(confidenceScore || 50),
+          summary: `Model: ${aiClassification.modelName}. Class activation: Fake ${fakePct}% vs Real ${realPct}%.`,
+          details: `Vision Transformer (ViT-Base, fine-tuned on CIFAKE). Softmax output logits: Fake=${aiClassification.rawLogits?.FAKE}, Real=${aiClassification.rawLogits?.REAL}. ${aiClassification.calibrationStatement} ${aiClassification.scopeLimitation}`,
+          visualCue: `Inference completed in ${aiClassification.inferenceTimeMs}ms on CPU.`,
           isDemonstrationOnly: false
-        }
-      ];
+        });
+      } else if (aiClassification && aiClassification.status !== 'success') {
+        evidence.push({
+          id: 'ev-ai-classifier-status',
+          title: 'AI Neural Classifier: Unavailable or Offline',
+          category: 'spatial_artifacts',
+          severity: 'info',
+          score: 0,
+          summary: aiClassification.errorMessage || 'Model weights not loaded or inference failed.',
+          details: 'TruthLens operates honestly in deterministic signal-processing mode when the neural classifier is unavailable. No mock or fabricated predictions are returned.',
+          visualCue: 'Review server logs or network status.',
+          isDemonstrationOnly: false
+        });
+      }
+
+      // 2. Frequency Domain Evidence
+      evidence.push({
+        id: 'ev-fft-energy',
+        title: '2D-FFT Radial Spectral Energy Distribution',
+        category: 'frequency_domain',
+        severity: 'info',
+        score: Math.round(energy.high_frequency_pct),
+        summary: `Low Freq (Core): ${energy.low_frequency_pct}%, Mid Freq: ${energy.mid_frequency_pct}%, High Freq: ${energy.high_frequency_pct}%`,
+        details: `The 2D Fast Fourier Transform decomposed the ${dimensions.width}×${dimensions.height} image into its spatial frequency components. The center of the spectrum represents baseline luminance, while radial dispersion represents edge transitions and micro-texture grain. Frequency visualization is an inspection aid and does not constitute proof of manipulation.`,
+        visualCue: 'Computed 2D-FFT magnitude spectrum displayed in the Media Inspector.',
+        isDemonstrationOnly: false
+      });
+
+      // 3. Metadata Evidence
+      evidence.push({
+        id: 'ev-exif-headers',
+        title: backendData.metadata_analysis.has_exif 
+          ? `Embedded EXIF Metadata Detected (${exifCount} tags)` 
+          : 'EXIF Metadata Stripped or Absent',
+        category: 'metadata_compression',
+        severity: backendData.metadata_analysis.has_exif ? 'clean' : 'medium',
+        score: backendData.metadata_analysis.has_exif ? 10 : 65,
+        summary: backendData.metadata_analysis.has_exif
+          ? `Found camera/software tags: ${Object.keys(backendData.metadata_analysis.exif_data).slice(0, 3).join(', ')}...`
+          : 'No EXIF metadata container found. Standard for social messaging apps or AI image generation tools.',
+        details: backendData.metadata_analysis.missing_metadata.join(' • '),
+        visualCue: 'See full metadata breakdown table below.',
+        isDemonstrationOnly: false
+      });
+
+      // 4. Resolution Evidence
+      evidence.push({
+        id: 'ev-resolution-spec',
+        title: `Resolution & Color Space: ${dimensions.width} × ${dimensions.height} (${backendData.metadata_analysis.color_mode})`,
+        category: 'spatial_artifacts',
+        severity: dimensions.total_pixels < 250000 ? 'medium' : 'clean',
+        score: dimensions.total_pixels < 250000 ? 50 : 15,
+        summary: `Aspect Ratio: ${dimensions.aspect_ratio} • Total Pixel Count: ${dimensions.total_pixels.toLocaleString()} px.`,
+        details: dimensions.total_pixels < 250000
+          ? 'Sub-pixel density is relatively low. Fine generative artifacts can be masked by low pixel counts.'
+          : 'Resolution is sufficient for standard spatial and frequency forensic inspection.',
+        visualCue: 'Spatial boundaries verified by Pillow decoder.',
+        isDemonstrationOnly: false
+      });
+
+      const summaryText = aiClassification && aiClassification.status === 'success'
+        ? `ViT classifier predicted ${aiClassification.predictedClass} (${aiClassification.predictedLabelDescription}) with ${aiClassification.confidenceScore}% confidence. Genuine 2D-FFT frequency spectrum and EXIF metadata computed.`
+        : `Extracted genuine dimensions (${dimensions.width}×${dimensions.height}), ${backendData.metadata_analysis.format} format, and computed real 2D-FFT frequency spectrum.`;
 
       return {
         id: backendData.id,
@@ -182,11 +263,11 @@ export const analysisService = {
         }),
         status: 'completed',
         mode: 'genuine_signal_processing',
-        stageLabel: backendData.stage_label || 'Image Forensics — AI Detector Not Yet Connected',
-        resultCategory: 'forensic_signal_analysis',
-        confidenceScore: null, // CONFIDENCE WITHHELD: Pretrained AI model not yet connected
-        confidenceRationale: 'Confidence score withheld: Pretrained AI classification model is not yet connected. TruthLens presents genuine mathematical Fourier signals without fabricating artificial confidence percentages.',
-        summary: `Extracted genuine dimensions (${dimensions.width}×${dimensions.height}), ${backendData.metadata_analysis.format} format, and computed real 2D-FFT frequency spectrum.`,
+        stageLabel: backendData.stage_label || 'Image Forensics & Pretrained ViT AI Classifier',
+        resultCategory,
+        confidenceScore,
+        confidenceRationale,
+        summary: summaryText,
         evidence,
         metadataAnalysis: {
           dimensions: backendData.metadata_analysis.dimensions,
@@ -207,13 +288,14 @@ export const analysisService = {
           description: backendData.frequency_analysis.description,
           disclaimer: backendData.frequency_analysis.disclaimer
         },
+        aiClassification,
         limitations: backendData.limitations,
         nextSteps: backendData.recommendations,
         modelInfo: {
-          name: 'TruthLens Signal Forensics Engine',
-          version: 'v1.0.0-phase1',
+          name: aiClassification?.modelName || 'TruthLens Media Forensics Engine',
+          version: aiClassification?.modelVersion || 'v1.1.0',
           mode: 'genuine_signal_processing',
-          disclaimer: 'Pretrained neural deepfake model is not yet connected. Results represent genuine deterministic signal processing.'
+          disclaimer: aiClassification?.calibrationStatement || 'Deterministic signal processing and neural classification.'
         },
         sha256Hash: backendData.sha256_hash
       };

@@ -1,6 +1,7 @@
 from fastapi import APIRouter, UploadFile, File, HTTPException, status
 from app.schemas.analysis import ForensicAnalysisResponse
 from app.services.detector import detector_service
+from app.services.classifier import classifier_service
 
 router = APIRouter(prefix="/api", tags=["analysis"])
 
@@ -11,13 +12,18 @@ def health_check():
     return {
         "status": "healthy",
         "service": "TruthLens Media Forensics Engine",
-        "version": "1.0.0-phase1",
-        "mode": "genuine_signal_processing",
-        "ai_model_connected": False,
+        "version": "1.1.0",
+        "mode": "multimodal_ai_and_signal_processing",
+        "ai_model_connected": classifier_service.is_available,
+        "ai_model_name": classifier_service.MODEL_NAME,
+        "ai_model_id": classifier_service.MODEL_ID,
+        "ai_model_status": classifier_service.status,
+        "ai_model_error": classifier_service.error_details,
         "capabilities": [
             "Real 2D-FFT frequency spectrum computation",
             "Image EXIF and dimension metadata extraction",
-            "Radial spectral energy distribution analysis"
+            "Radial spectral energy distribution analysis",
+            "Pretrained Vision Transformer AI-generated image classification (ONNX Runtime CPU)"
         ]
     }
 

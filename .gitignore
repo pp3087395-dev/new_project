@@ -36,3 +36,15 @@ ENV/
 .idea/
 .DS_Store
 Thumbs.db
+
+# Machine Learning & ONNX Model Weights
+*.onnx
+*.onnx_data
+*.bin
+*.safetensors
+*.pt
+*.pth
+/models/
+backend/models/
+.cache/
+scratch/

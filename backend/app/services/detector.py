@@ -12,7 +12,9 @@ from app.schemas.analysis import (
     DimensionsSchema,
     FrequencyAnalysisSchema,
     SpectralEnergySchema,
+    AIClassificationSchema,
 )
+from app.services.classifier import classifier_service
 
 class MediaDetectorService:
     """
@@ -246,18 +248,46 @@ class MediaDetectorService:
         # 2. Compute genuine 2D-FFT frequency spectrum
         frequency_analysis = self.compute_2d_fft(image)
 
+        # 3. Perform genuine AI-Generated Image Classification (Vision Transformer ONNX)
+        ai_pred = classifier_service.predict(image)
+        ai_classification = AIClassificationSchema(**ai_pred)
+
+        # Contextualize status and limitations honestly
+        if ai_classification.status == "success":
+            model_status = (
+                f"Connected and active: {classifier_service.MODEL_NAME}. "
+                f"Prediction: {ai_classification.predicted_class} (Scores: Real={ai_classification.scores['REAL']}, Fake={ai_classification.scores['FAKE']}). "
+                f"Inference: {ai_classification.inference_time_ms}ms on CPU."
+            )
+            stage_label = "Image Forensics & Pretrained ViT AI Classifier"
+        elif ai_classification.status == "unavailable":
+            model_status = (
+                f"AI model unavailable: {ai_classification.error_message}. "
+                f"Operating in deterministic signal-processing fallback mode."
+            )
+            stage_label = "Image Forensics — AI Classifier Unavailable"
+        else:
+            model_status = (
+                f"AI model inference error: {ai_classification.error_message}. "
+                f"No synthetic prediction generated."
+            )
+            stage_label = "Image Forensics — AI Inference Error"
+
         limitations = [
-            "Pretrained neural deepfake model is not yet connected. No automated classification verdict is assigned.",
+            "AI model classification is statistical and trained on the CIFAKE dataset; it does not provide definitive judicial or mathematical proof.",
+            "This model is specialized for detecting AI-generated synthetic images and has not been established as a universal face-swap detector.",
+            "Scores are raw softmax outputs from Vision Transformer logits and represent model activation strength rather than calibrated Bayesian probabilities.",
             "2D-FFT frequency distributions visualize periodicity and edge energy, but cannot alone prove whether an image is AI-generated.",
             "EXIF metadata is easily stripped by messaging platforms and social networks; absence of EXIF is not definitive evidence of fabrication.",
             "Compression artifacts (e.g., JPEG 8x8 block discrete cosine transforms) introduce high-frequency harmonics that must be distinguished from generative upsampler grids."
         ]
 
         recommendations = [
+            "Evaluate the Vision Transformer prediction alongside the 2D-FFT frequency spectrum and EXIF provenance data for multi-spectral corroboration.",
             "Examine the 2D-FFT magnitude spectrum for abnormal periodic starburst or cross-hatch spikes characteristic of GAN transposed convolutions.",
             "Inspect the EXIF table for software provenance tags (e.g., Photoshop, Midjourney) or missing camera hardware parameters.",
-            "Cross-reference the image with reverse-image search engines (Google Lens, TinEye) to trace publication history.",
-            "Connect a trained deepfake classifier (scheduled for Phase 3) for probabilistic model scoring."
+            "Do not label an image definitively authentic or inauthentic based on automated AI model scores alone.",
+            "Cross-reference the image with reverse-image search engines (Google Lens, TinEye) to trace publication history."
         ]
 
         audit_id = f"TL-FOR-{hashlib.md5(file_bytes[:64]).hexdigest()[:6].upper()}"
@@ -271,10 +301,11 @@ class MediaDetectorService:
             file_size_bytes=file_size_bytes,
             file_size_formatted=file_size_formatted,
             sha256_hash=sha256_hash,
-            stage_label="Image Forensics — AI Detector Not Yet Connected",
+            stage_label=stage_label,
             metadata_analysis=metadata_analysis,
             frequency_analysis=frequency_analysis,
-            model_status="Pretrained neural deepfake model is not yet connected. Results represent genuine deterministic signal processing.",
+            ai_classification=ai_classification,
+            model_status=model_status,
             limitations=limitations,
             recommendations=recommendations,
         )

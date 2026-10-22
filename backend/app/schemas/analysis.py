@@ -27,6 +27,21 @@ class FrequencyAnalysisSchema(BaseModel):
     description: str
     disclaimer: str
 
+class AIClassificationSchema(BaseModel):
+    model_id: str = "onnx-community/ai-image-detection-ONNX"
+    model_name: str = "CapCheck ViT AI-Generated Image Detector (ONNX Quantized)"
+    model_version: str = "1.0.0"
+    status: str = Field(..., description="'success', 'unavailable', or 'error'")
+    predicted_class: Optional[str] = Field(None, description="'REAL' or 'FAKE'")
+    predicted_label_description: Optional[str] = Field(None, description="Human-readable description of predicted class")
+    confidence_score: Optional[float] = Field(None, description="Model confidence percentage (0-100)")
+    scores: Optional[Dict[str, float]] = Field(None, description="Softmax probability distribution per class")
+    raw_logits: Optional[Dict[str, float]] = Field(None, description="Raw unnormalized transformer logits")
+    calibration_statement: str
+    scope_limitation: str
+    inference_time_ms: Optional[float] = None
+    error_message: Optional[str] = None
+
 class ForensicAnalysisResponse(BaseModel):
     status: str = "success"
     mode: str = "genuine_signal_processing"
@@ -36,9 +51,10 @@ class ForensicAnalysisResponse(BaseModel):
     file_size_bytes: int
     file_size_formatted: str
     sha256_hash: str
-    stage_label: str = "Image Forensics — AI Detector Not Yet Connected"
+    stage_label: str = "Multimodal Image Forensics & AI Classifier"
     metadata_analysis: ImageMetadataSchema
     frequency_analysis: FrequencyAnalysisSchema
-    model_status: str = "Pretrained neural deepfake model is not yet connected. Results represent genuine deterministic signal processing."
+    ai_classification: Optional[AIClassificationSchema] = None
+    model_status: str
     limitations: List[str]
     recommendations: List[str]

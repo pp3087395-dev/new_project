@@ -34,8 +34,28 @@ export const ReportModal: FC<ReportModalProps> = ({ result, onClose }) => {
 
   const getResultBadge = () => {
     if (isGenuine) {
+      if (result.aiClassification && result.aiClassification.status === 'success') {
+        if (result.aiClassification.predictedClass === 'FAKE') {
+          return {
+            title: 'AI-GENERATED MEDIA PATTERNS DETECTED',
+            class: 'bg-red-100 text-red-900 border-red-300 dark:bg-red-950/80 dark:text-red-300 dark:border-red-500/40'
+          };
+        }
+        return {
+          title: 'NO STRONG AI GENERATION SIGNS DETECTED',
+          class: 'bg-emerald-100 text-emerald-900 border-emerald-300 dark:bg-emerald-950/80 dark:text-emerald-300 dark:border-emerald-500/40'
+        };
+      }
+
+      if (result.aiClassification && result.aiClassification.status !== 'success') {
+        return {
+          title: 'SIGNAL FORENSICS ONLY (AI MODEL UNAVAILABLE)',
+          class: 'bg-amber-100 text-amber-900 border-amber-300 dark:bg-amber-950/80 dark:text-amber-300 dark:border-amber-500/40'
+        };
+      }
+
       return {
-        title: 'IMAGE FORENSICS ACTIVE (AI VERDICT WITHHELD)',
+        title: 'GENUINE IMAGE FORENSICS ACTIVE',
         class: 'bg-cyan-100 text-cyan-900 border-cyan-300 dark:bg-cyan-950/80 dark:text-cyan-300 dark:border-cyan-500/40'
       };
     }
@@ -78,7 +98,7 @@ export const ReportModal: FC<ReportModalProps> = ({ result, onClose }) => {
             <span className={`text-[10px] font-mono px-2 py-0.5 rounded border ${
               isGenuine ? 'text-cyan-400 bg-cyan-950/60 border-cyan-800/40' : 'text-violet-400 bg-violet-950/60 border-violet-800/40'
             }`}>
-              {isGenuine ? 'GENUINE FORENSICS' : 'DEMO MODE'}
+              {isGenuine ? (result.aiClassification?.status === 'success' ? 'ONNX ViT & FORENSICS' : 'GENUINE FORENSICS') : 'DEMO MODE'}
             </span>
           </div>
 
@@ -125,7 +145,7 @@ export const ReportModal: FC<ReportModalProps> = ({ result, onClose }) => {
                 </span>
               </div>
               <p className="text-xs text-slate-400 print:text-slate-600">
-                Automated 2D Fast Fourier Transform & Metadata Forensics Protocol
+                Automated 2D Fast Fourier Transform, Metadata Forensics & ViT Neural Classification Protocol
               </p>
             </div>
 
@@ -145,7 +165,9 @@ export const ReportModal: FC<ReportModalProps> = ({ result, onClose }) => {
             <Sparkles className="w-4 h-4 text-cyan-400 shrink-0 print:hidden" />
             <div className="leading-relaxed">
               <strong>AUDIT STATUS:</strong> {isGenuine 
-                ? 'Genuine signal processing active. 2D Fast Fourier Transform and EXIF metadata extracted. Pretrained neural deepfake model is not yet connected.'
+                ? (result.aiClassification?.status === 'success'
+                  ? `Genuine forensics active: Pretrained Vision Transformer (${result.aiClassification.modelName}) neural classification, 2D Fast Fourier Transform, and EXIF extraction.`
+                  : 'Genuine signal processing active. 2D Fast Fourier Transform and EXIF metadata extracted. Pretrained neural classifier is currently offline/unavailable.')
                 : 'This audit report was compiled using TruthLens Phase 1 simulated heuristics.'}
             </div>
           </div>
@@ -200,6 +222,11 @@ export const ReportModal: FC<ReportModalProps> = ({ result, onClose }) => {
                   <span className="text-3xl font-extrabold text-white print:text-black font-heading">
                     {result.confidenceScore.toFixed(1)}%
                   </span>
+                  {result.aiClassification?.scores && (
+                    <div className="text-[10px] font-mono text-slate-400 print:text-slate-600 mt-0.5">
+                      Fake: {(result.aiClassification.scores.FAKE * 100).toFixed(1)}% | Real: {(result.aiClassification.scores.REAL * 100).toFixed(1)}%
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="sm:text-right text-xs font-mono text-amber-400 print:text-amber-700">
@@ -212,6 +239,50 @@ export const ReportModal: FC<ReportModalProps> = ({ result, onClose }) => {
               {result.summary}
             </p>
           </div>
+
+          {/* AI Neural Classifier Section */}
+          {result.aiClassification && (
+            <div className="p-4 rounded-xl border border-slate-800 print:border-slate-300 bg-slate-950/40 print:bg-white space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                <div className="font-mono text-xs font-bold text-white print:text-black uppercase">
+                  Pretrained AI Classifier: {result.aiClassification.modelName}
+                </div>
+                <div className="text-[11px] font-mono text-cyan-400 print:text-cyan-800">
+                  {result.aiClassification.modelId}
+                </div>
+              </div>
+
+              {result.aiClassification.status === 'success' ? (
+                <div className="space-y-2 text-xs">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 font-mono text-[11px] p-2.5 rounded-lg bg-black/40 print:bg-slate-100">
+                    <div>
+                      <span className="text-slate-500 block text-[9px] uppercase">Predicted Class</span>
+                      <span className="font-bold text-white print:text-black">{result.aiClassification.predictedClass}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-500 block text-[9px] uppercase">Confidence</span>
+                      <span className="font-bold text-white print:text-black">{result.aiClassification.confidenceScore}%</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-500 block text-[9px] uppercase">Fake Score</span>
+                      <span className="font-bold text-red-400 print:text-red-700">{(result.aiClassification.scores?.FAKE ? result.aiClassification.scores.FAKE * 100 : 0).toFixed(2)}%</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-500 block text-[9px] uppercase">Real Score</span>
+                      <span className="font-bold text-emerald-400 print:text-emerald-700">{(result.aiClassification.scores?.REAL ? result.aiClassification.scores.REAL * 100 : 0).toFixed(2)}%</span>
+                    </div>
+                  </div>
+                  <p className="text-[10px] text-slate-400 print:text-slate-600 italic">
+                    Note: {result.aiClassification.calibrationStatement} {result.aiClassification.scopeLimitation}
+                  </p>
+                </div>
+              ) : (
+                <div className="text-xs text-amber-400 print:text-amber-700 font-mono">
+                  Classifier status: {result.aiClassification.status} ({result.aiClassification.errorMessage || 'Unavailable'})
+                </div>
+              )}
+            </div>
+          )}
 
           {/* 2D-FFT Visual Evidence (if computed) */}
           {result.frequencyAnalysis && (

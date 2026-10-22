@@ -71,6 +71,22 @@ export interface ModelMetadata {
   disclaimer: string;
 }
 
+export interface AIClassificationResult {
+  modelId: string;
+  modelName: string;
+  modelVersion: string;
+  status: 'success' | 'unavailable' | 'error';
+  predictedClass?: 'REAL' | 'FAKE' | string | null;
+  predictedLabelDescription?: string | null;
+  confidenceScore?: number | null;
+  scores?: { REAL: number; FAKE: number } | Record<string, number> | null;
+  rawLogits?: { REAL: number; FAKE: number } | Record<string, number> | null;
+  calibrationStatement: string;
+  scopeLimitation: string;
+  inferenceTimeMs?: number | null;
+  errorMessage?: string | null;
+}
+
 export interface AnalysisResult {
   id: string;
   fileName: string;
@@ -83,12 +99,13 @@ export interface AnalysisResult {
   mode: 'genuine_signal_processing' | 'demo_simulation';
   stageLabel: string;
   resultCategory: ResultCategory;
-  confidenceScore: number | null; // null when withheld or model not yet connected
+  confidenceScore: number | null; // null when withheld or model unavailable
   confidenceRationale: string;
   summary: string;
   evidence: EvidenceItem[];
   metadataAnalysis?: ImageMetadataAnalysis;
   frequencyAnalysis?: FrequencyAnalysis;
+  aiClassification?: AIClassificationResult;
   videoFrames?: VideoFrameSample[];
   limitations: string[];
   nextSteps: string[];

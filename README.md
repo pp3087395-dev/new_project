@@ -48,19 +48,20 @@ truthlens/
 │   ├── vite.config.ts                 # Vite + Tailwind plugin configuration
 │   └── package.json                   # Frontend dependencies
 │
-├── backend/                    # Python + FastAPI + Uvicorn (Phase 2 Ready)
+├── backend/                    # Python + FastAPI + Uvicorn + ONNX Runtime CPU
 │   ├── app/
 │   │   ├── routes/
 │   │   │   └── analysis.py            # POST /api/analyze/image, video & GET /api/health
 │   │   ├── services/
-│   │   │   └── detector.py            # Media detector service with clean AI hooks
+│   │   │   ├── classifier.py          # Pretrained ViT ONNX Classifier Service (Singleton)
+│   │   │   └── detector.py            # Multi-spectral forensics (2D-FFT + EXIF + ViT)
 │   │   ├── schemas/
-│   │   │   └── analysis.py            # Pydantic validation schemas
-│   │   └── main.py                    # FastAPI server entry point with CORS
-│   └── requirements.txt               # Backend dependencies
+│   │   │   └── analysis.py            # Pydantic validation schemas (AIClassificationSchema)
+│   │   └── main.py                    # FastAPI server entry point with startup lifespan
+│   └── requirements.txt               # Backend dependencies (onnxruntime, huggingface_hub, etc.)
 │
 ├── package.json                # Root convenience scripts
-├── .gitignore                  # Git ignore rules
+├── .gitignore                  # Git ignore rules (includes model weights & cache)
 └── README.md                   # Hackathon project documentation
 ```
 
@@ -72,10 +73,11 @@ truthlens/
 * **Node.js:** v18+ (tested on v24)
 * **Python:** 3.10+ (tested on 3.13)
 * **Visual Studio Code**
+* **Hardware:** Compatible with standard 16 GB RAM laptops with CPU-only / integrated graphics.
 
 ---
 
-### Step 1: Running the Frontend (Phase 1 Prototype)
+### Step 1: Running the Frontend
 
 1. Open VS Code in the project root: `c:\Users\hp\new_project`
 2. Open the built-in terminal (`Ctrl + ~`) and navigate to the frontend folder:
@@ -87,16 +89,10 @@ truthlens/
    ```
    http://localhost:5173
    ```
-4. **Instant Hackathon Test:**
-   * In the top navigation, click **"Analyze Media"**.
-   * Under the upload box, click one of the **Curated Demonstration Samples** (e.g. *"Suspect Deepfake Portrait"* or *"Camera Captured Photo"*).
-   * Click **"Analyze Media"** to watch the animated 5-stage heuristic inspection.
-   * Review the **Results Dashboard**, switch between **Standard**, **2D-FFT Spectra**, and **Boundary Heatmap** overlays.
-   * Click **"Generate Audit Report (PDF/Print)"** to view or print the executive audit certificate!
 
 ---
 
-### Step 2: Running the Backend (Phase 2 Ready)
+### Step 2: Running the Backend & AI Model Service
 
 1. Open a second terminal tab in VS Code:
    ```powershell
@@ -104,16 +100,43 @@ truthlens/
    python -m venv venv
    .\venv\Scripts\Activate.ps1
    pip install -r requirements.txt
-   python app/main.py
+   python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
    ```
-2. The FastAPI server will start on:
+2. **Automatic Model Download & Cache:**
+   * On startup, the backend automatically downloads the quantized ONNX model weights (`onnx-community/ai-image-detection-ONNX`, 83.3 MB) into the local Hugging Face cache.
+   * Model weights are **loaded once** into memory on server start via FastAPI lifespan and reused across all requests.
+   * Model weights are excluded from Git commits via `.gitignore`.
+3. Check backend health:
    ```
-   http://127.0.0.1:8000
+   http://127.0.0.1:8000/api/health
    ```
-3. Interactive Swagger API documentation is available at:
+4. Interactive Swagger API documentation is available at:
    ```
    http://127.0.0.1:8000/docs
    ```
+
+---
+
+## 🧠 Pretrained AI Model Integration
+
+| Attribute | Specification |
+| :--- | :--- |
+| **Model Repository** | [`onnx-community/ai-image-detection-ONNX`](https://huggingface.co/onnx-community/ai-image-detection-ONNX) |
+| **Base Architecture** | Vision Transformer (`google/vit-base-patch16-224-in21k`, Google, Apache 2.0) |
+| **Fine-Tuning Dataset** | CIFAKE (AI-generated synthetic media vs real photographs) |
+| **Model Origin** | CapCheck (`capcheck/ai-image-detection`, Apache 2.0) |
+| **Runtime Engine** | ONNX Runtime (`CPUExecutionProvider`) |
+| **Weight Variant** | `model_quantized.onnx` (83.29 MB, INT8 quantized for ultra-low CPU latency) |
+| **Input Shape** | `[1, 3, 224, 224]` float32 (Bilinear interpolation, rescale 1/255, mean 0.5, std 0.5) |
+| **Output Classes** | `REAL` (Class 0), `FAKE` (Class 1) |
+| **Inference Latency** | ~110–135 ms on CPU |
+| **Memory Footprint** | ~150–200 MB RAM |
+
+### Important Scientific & Ethical Limitations
+* **Uncalibrated Activations:** Scores are raw softmax outputs from the Vision Transformer and represent relative model activation on training distributions, not calibrated statistical probabilities.
+* **Specialized Domain:** The model detects AI-generated synthetic images (diffusion, GANs) and has **not** been established as a universal facial manipulation or face-swap detector.
+* **Separation of Evidence:** Mathematical 2D-FFT frequency spectrum analysis and EXIF metadata extraction remain strictly separated from the model prediction. 2D-FFT visualizations are never represented as standalone proof of manipulation.
+* **Honest Failure Handling:** If model weights cannot be loaded or inference fails, the system returns an honest `unavailable` status with error details; it never fabricates mock confidence scores.
 
 ---
 
@@ -121,29 +144,21 @@ truthlens/
 
 TruthLens inspects media across four foundational axes:
 
-1. **2D-FFT Frequency Domain Analysis:**
+1. **Pretrained Vision Transformer (ViT) Classifier:**
+   Deep patch-based self-attention analyzing multi-scale synthetic synthesis artifacts across 224×224 normalized color patches.
+2. **2D-FFT Frequency Domain Analysis:**
    Transposed convolutions in generative models leave subtle periodic checkerboard harmonics across the spatial frequency spectrum. Natural lenses produce a continuous roll-off following natural $1/f$ optical decay.
-2. **Spatial Boundary Gradient Analysis:**
-   Composited face swaps rely on color blending and boundary smoothing along facial contours (jawline, hairline), creating a detectable sharpness drop relative to background camera sensor noise.
-3. **Corneal Specular Reflection Consistency:**
-   Natural photographs preserve physical 3D ray-tracing lighting angles across both pupils. Synthetic faces often render asymmetrical light reflection vectors.
-4. **Keyframe Temporal Optical Flow:**
-   Video frames are sampled uniformly to detect high-frequency micro-jitter or warping artifacts during rapid movement and head rotation.
-
----
-
-## ⚖️ Responsible AI & Ethical Disclosures
-
-* **Probabilistic Scoring:** Machine learning results are statistical estimates, not judicial proof.
-* **No Negative Guarantees:** *"No Strong Signs of Manipulation Detected"* does not certify that media is unaltered; novel generative models or slight manual retouching may evade detection.
-* **Compression Degradation:** Heavy social media compression (WhatsApp, TikTok, Instagram) strips high-frequency signals and may induce false-positive macroblocking.
+3. **EXIF & Container Provenance:**
+   Detects missing camera hardware tags, capture timestamps, and software generation flags.
+4. **Spatial Boundary Gradient Analysis:**
+   Inspects resolution, color space, and pixel density for compression degradation.
 
 ---
 
 ## 🗺️ Project Hackathon Roadmap
 
 * [x] **Phase 1 (Complete):** High-fidelity responsive frontend, upload studio, interactive scanner demo, explainable heuristics engine, local history logging, and printable PDF audit reports.
-* [ ] **Phase 2:** Connect React upload studio to the live FastAPI backend via Axios/fetch.
-* [ ] **Phase 3:** Integrate an open-source pretrained model (e.g., EfficientNet-B4 or MesoNet weights).
+* [x] **Phase 2 (Complete):** Real pretrained Vision Transformer ONNX classification model integration (`onnx-community/ai-image-detection-ONNX`), live FastAPI connection, real 2D-FFT magnitude spectrum computation, and uncalibrated probability disclosures.
+* [ ] **Phase 3:** Enhanced multi-generator fine-tuning (Flux, SDXL, Midjourney v6) and facial landmark crop pipeline.
 * [ ] **Phase 4:** Deep video keyframe decoding with OpenCV and temporal heatmap timeline.
 * [ ] **Phase 5:** End-to-end stress testing, accessibility audit, and hackathon presentation pitch deck.
