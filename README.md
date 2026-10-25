@@ -100,7 +100,8 @@ truthlens/
    python -m venv venv
    .\venv\Scripts\Activate.ps1
    pip install -r requirements.txt
-   python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
+   python -m uvicorn app.main:app --host 0.0.0.0 --port 8000
+   # Or for production / Render: python -m uvicorn app.main:app --host 0.0.0.0 --port $PORT
    ```
 2. **Automatic Model Download & Cache:**
    * On startup, the backend automatically downloads the quantized ONNX model weights (`onnx-community/ai-image-detection-ONNX`, 83.3 MB) into the local Hugging Face cache.

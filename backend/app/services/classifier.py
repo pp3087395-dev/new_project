@@ -5,13 +5,24 @@ from typing import Dict, Any, Optional
 import numpy as np
 from PIL import Image
 
-try:
-    import torch
-    from transformers import AutoImageProcessor, AutoModelForImageClassification
-except ImportError:
-    torch = None
-    AutoImageProcessor = None
-    AutoModelForImageClassification = None
+# Lazy-imported in background thread during initialize() to ensure sub-second port binding on startup
+torch = None
+AutoImageProcessor = None
+AutoModelForImageClassification = None
+
+def _ensure_torch_imported():
+    global torch, AutoImageProcessor, AutoModelForImageClassification
+    if torch is None:
+        try:
+            import torch as _torch
+            from transformers import AutoImageProcessor as _AIP, AutoModelForImageClassification as _AMIC
+            torch = _torch
+            AutoImageProcessor = _AIP
+            AutoModelForImageClassification = _AMIC
+        except ImportError:
+            torch = None
+            AutoImageProcessor = None
+            AutoModelForImageClassification = None
 
 logger = logging.getLogger("truthlens.classifier")
 
@@ -49,6 +60,7 @@ class AIClassifierService:
         self._model: Optional[Any] = None
         self._processor: Optional[Any] = None
         self._is_initialized: bool = False
+        self._is_loading: bool = False
         self._init_error: Optional[str] = None
         self._lock = threading.Lock()
 
@@ -63,11 +75,11 @@ class AIClassifierService:
 
     @property
     def status(self) -> str:
-        if self._is_initialized:
+        if self._is_initialized and self._model is not None:
             return "ready"
         if self._init_error:
             return "error"
-        return "uninitialized"
+        return "loading"
 
     @property
     def error_details(self) -> Optional[str]:
@@ -85,9 +97,15 @@ class AIClassifierService:
             if self._is_initialized:
                 return True
 
+            self._is_loading = True
+            self._init_error = None
+
+            _ensure_torch_imported()
+
             if torch is None or AutoImageProcessor is None or AutoModelForImageClassification is None:
                 self._init_error = "PyTorch or HuggingFace transformers is not installed."
                 logger.error(self._init_error)
+                self._is_loading = False
                 return False
 
             try:
@@ -113,6 +131,8 @@ class AIClassifierService:
                 self._processor = None
                 logger.error(self._init_error, exc_info=True)
                 return False
+            finally:
+                self._is_loading = False
 
     def predict(self, image: Image.Image) -> Dict[str, Any]:
         """
