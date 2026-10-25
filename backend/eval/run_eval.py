@@ -15,9 +15,23 @@ import os
 import sys
 import argparse
 import time
+import math
 from pathlib import Path
 from typing import Dict, List, Tuple, Optional
 from PIL import Image
+
+def wilson_score_interval(successes: int, total: int, z: float = 1.96) -> Tuple[float, float]:
+    """Computes Wilson score 95% confidence interval for a binomial proportion [0.0, 100.0]."""
+    if total <= 0:
+        return 0.0, 0.0
+    p_hat = successes / total
+    denom = 1.0 + (z**2) / total
+    center = (p_hat + (z**2) / (2.0 * total)) / denom
+    margin = (z / denom) * math.sqrt((p_hat * (1.0 - p_hat) / total) + ((z**2) / (4.0 * (total**2))))
+    lower = max(0.0, center - margin) * 100.0
+    upper = min(1.0, center + margin) * 100.0
+    return round(lower, 2), round(upper, 2)
+
 
 # Ensure backend root is on sys.path
 SCRIPT_DIR = Path(__file__).resolve().parent
@@ -379,8 +393,13 @@ def run_evaluation(
     lines.append("=" * 80)
     lines.append("                 TRUTHLENS FORENSIC MODEL EVALUATION REPORT")
     lines.append("=" * 80)
+    fpr_ci_lower, fpr_ci_upper = wilson_score_interval(fp, total_real)
+    fnr_ci_lower, fnr_ci_upper = wilson_score_interval(fn, total_fake)
+
     lines.append(f"Model Backend     : {backend} ({model_name})")
     lines.append(f"Dataset Size      : {total_eval} images ({total_real} Real, {total_fake} Fake)")
+    if total_real < 30 or total_fake < 30:
+        lines.append(f"   [!] WARNING: Dataset sample size is under 30 images (Real: {total_real}, Fake: {total_fake}). Confidence intervals are wider.")
     lines.append(f"Average Latency   : {avg_latency:.1f} ms / image on CPU")
     lines.append(f"Peak Working RAM  : {peak_ram_mb:.1f} MB")
     lines.append(f"Cutoff Threshold  : {default_threshold:.2f} (Uncertain Band: +/-{uncertain_band:.2f})")
@@ -390,8 +409,9 @@ def run_evaluation(
     lines.append(f"   Conclusive Accuracy    : {conclusive_acc:.2f}% ({tp + tn}/{total_conclusive} decisive verdicts)")
     lines.append(f"   Strict Accuracy        : {strict_acc:.2f}% ({tp + tn}/{total_eval} total dataset)")
     lines.append(f"   Inconclusive Rate      : {inconclusive_rate:.2f}% ({total_inc}/{total_eval} within uncertain band)")
-    lines.append(f"   False Positive Rate    : {fpr:.2f}% ({fp}/{total_real} real photos called fake)")
-    lines.append(f"   False Negative Rate    : {fnr:.2f}% ({fn}/{total_fake} AI images missed as real)")
+    lines.append(f"   False Positive Rate    : {fpr:.2f}% ({fp}/{total_real} real photos called fake) [95% Wilson CI: {fpr_ci_lower:.1f}% - {fpr_ci_upper:.1f}%]")
+    lines.append(f"   False Negative Rate    : {fnr:.2f}% ({fn}/{total_fake} AI images missed as real) [95% Wilson CI: {fnr_ci_lower:.1f}% - {fnr_ci_upper:.1f}%]")
+
     lines.append("")
     lines.append("2. THREE-WAY CONFUSION MATRIX")
     lines.append("                          Pred REAL    Pred INCONCLUSIVE    Pred FAKE")

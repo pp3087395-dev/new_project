@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import type { FC, MouseEvent } from 'react';
 import { 
   History, 
@@ -24,13 +24,9 @@ export const HistoryDashboard: FC<HistoryDashboardProps> = ({
   onSelectResult,
   onNewAnalysis
 }) => {
-  const [historyItems, setHistoryItems] = useState<AnalysisHistoryEntry[]>([]);
+  const [historyItems, setHistoryItems] = useState<AnalysisHistoryEntry[]>(() => historyService.getHistory());
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
-
-  useEffect(() => {
-    loadHistory();
-  }, []);
 
   const loadHistory = () => {
     setHistoryItems(historyService.getHistory());

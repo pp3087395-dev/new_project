@@ -11,6 +11,7 @@ Checks required:
 import io
 import struct
 import unittest
+import pytest
 from PIL import Image
 
 from app.services.provenance import inspect_provenance
@@ -82,6 +83,7 @@ class TestProvenanceAndHonestLabels(unittest.TestCase):
         self.assertFalse(prov.ai_source_declared)
         self.assertFalse(prov.c2pa_present)
 
+    @pytest.mark.model
     def test_d_verdict_identical_with_and_without_provenance_data(self):
         """Check (d): the classifier verdict is identical with and without provenance data."""
         # 1. Plain image without any provenance

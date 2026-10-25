@@ -838,7 +838,7 @@ export const ResultsDashboard: FC<ResultsDashboardProps> = ({
           <div className="glass-card rounded-2xl border border-slate-800 bg-slate-900/60 p-6 shadow-lg">
             <h3 className="text-sm font-bold text-white font-mono uppercase tracking-wider mb-3 flex items-center gap-2 text-amber-300">
               <ShieldAlert className="w-4 h-4 text-amber-400" />
-              <span>Phase 1 Limitations</span>
+              <span>Forensic Limitations</span>
             </h3>
             <ul className="space-y-2">
               {result.limitations.map((lim, idx) => (

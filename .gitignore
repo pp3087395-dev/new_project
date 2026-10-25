@@ -48,3 +48,11 @@ Thumbs.db
 backend/models/
 .cache/
 scratch/
+
+# Personal Evaluation Images (must not be committed or pushed)
+backend/eval/real/*
+!backend/eval/real/.gitkeep
+backend/eval/fake/*
+!backend/eval/fake/.gitkeep
+backend/eval/cache_*.json
+backend/eval/crops_speed_experiment.json

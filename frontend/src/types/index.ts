@@ -67,7 +67,7 @@ export interface FrequencyAnalysis {
 export interface ModelMetadata {
   name: string;
   version: string;
-  mode: 'genuine_signal_processing' | 'demo_simulation' | 'pretrained_onnx' | 'backend_fastapi';
+  mode: 'genuine_signal_processing' | 'demo_simulation' | 'backend_fastapi';
   disclaimer: string;
 }
 

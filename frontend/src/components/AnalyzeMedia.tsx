@@ -29,15 +29,31 @@ export const AnalyzeMedia: FC<AnalyzeMediaProps> = ({
   onAnalysisComplete,
   preSelectedSampleId 
 }) => {
+  const initialSample = preSelectedSampleId ? SAMPLE_DATASETS.find(s => s.id === preSelectedSampleId) || null : null;
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [selectedSample, setSelectedSample] = useState<SampleMedia | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [fileType, setFileType] = useState<'image' | 'video' | null>(null);
+  const [selectedSample, setSelectedSample] = useState<SampleMedia | null>(initialSample);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(initialSample ? initialSample.url : null);
+  const [fileType, setFileType] = useState<'image' | 'video' | null>(initialSample ? initialSample.type : null);
   const [isDragging, setIsDragging] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [progressPct, setProgressPct] = useState(0);
   const [progressStage, setProgressStage] = useState('');
+  const [prevSampleId, setPrevSampleId] = useState<string | null | undefined>(preSelectedSampleId);
+
+  if (preSelectedSampleId !== prevSampleId) {
+    setPrevSampleId(preSelectedSampleId);
+    if (preSelectedSampleId) {
+      const sample = SAMPLE_DATASETS.find(s => s.id === preSelectedSampleId);
+      if (sample) {
+        setSelectedSample(sample);
+        setSelectedFile(null);
+        setPreviewUrl(sample.url);
+        setFileType(sample.type);
+        setErrorMessage(null);
+      }
+    }
+  }
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -136,15 +152,13 @@ export const AnalyzeMedia: FC<AnalyzeMediaProps> = ({
     };
   }, [pollAttempt]);
 
-  // Check if a preselected sample was passed from Hero/Demo
-  useEffect(() => {
-    if (preSelectedSampleId) {
-      const sample = SAMPLE_DATASETS.find(s => s.id === preSelectedSampleId);
-      if (sample) {
-        handleSelectSample(sample);
-      }
-    }
-  }, [preSelectedSampleId]);
+  const handleSelectSample = (sample: SampleMedia) => {
+    setErrorMessage(null);
+    setSelectedFile(null);
+    setSelectedSample(sample);
+    setFileType(sample.type);
+    setPreviewUrl(sample.url);
+  };
 
   const handleDragOver = (e: DragEvent) => {
     e.preventDefault();
@@ -197,14 +211,6 @@ export const AnalyzeMedia: FC<AnalyzeMediaProps> = ({
     if (e.target.files && e.target.files.length > 0) {
       validateAndSetFile(e.target.files[0]);
     }
-  };
-
-  const handleSelectSample = (sample: SampleMedia) => {
-    setErrorMessage(null);
-    setSelectedFile(null);
-    setSelectedSample(sample);
-    setFileType(sample.type);
-    setPreviewUrl(sample.url);
   };
 
   const handleRemoveMedia = () => {
@@ -314,7 +320,7 @@ export const AnalyzeMedia: FC<AnalyzeMediaProps> = ({
             )}
             {backendStatus === 'offline' && (
               <span>
-                <strong>FastAPI Backend Offline:</strong> Unable to connect to <code className="bg-black/40 px-1 py-0.5 rounded font-mono">{backendUrl}</code> after 60s. Start locally via <code className="bg-black/40 px-1 py-0.5 rounded font-mono">python app/main.py</code> or verify your cloud deployment.
+                <strong>FastAPI Backend Offline:</strong> Unable to connect to <code className="bg-black/40 px-1 py-0.5 rounded font-mono">{backendUrl}</code> after 60s. Start locally via <code className="bg-black/40 px-1 py-0.5 rounded font-mono">python -m uvicorn app.main:app</code> or verify your cloud deployment.
               </span>
             )}
           </div>

@@ -3,8 +3,9 @@
 ================================================================================
 Model Backend     : smaug (Smaug AI Image Detector (Abacus AI))
 Dataset Size      : 55 images (28 Real, 27 Fake)
+   [!] WARNING: Dataset sample size is under 30 images (Real: 28, Fake: 27). Confidence intervals are wider.
 Average Latency   : 2786.0 ms / image on CPU
-Peak Working RAM  : 2522.6 MB
+Peak Working RAM  : 2707.8 MB
 Cutoff Threshold  : 0.50 (Uncertain Band: +/-0.10)
 Uncertain Window  : [0.40, 0.60] -> INCONCLUSIVE
 --------------------------------------------------------------------------------
@@ -12,8 +13,8 @@ Uncertain Window  : [0.40, 0.60] -> INCONCLUSIVE
    Conclusive Accuracy    : 100.00% (54/54 decisive verdicts)
    Strict Accuracy        : 98.18% (54/55 total dataset)
    Inconclusive Rate      : 1.82% (1/55 within uncertain band)
-   False Positive Rate    : 0.00% (0/28 real photos called fake)
-   False Negative Rate    : 0.00% (0/27 AI images missed as real)
+   False Positive Rate    : 0.00% (0/28 real photos called fake) [95% Wilson CI: 0.0% - 12.1%]
+   False Negative Rate    : 0.00% (0/27 AI images missed as real) [95% Wilson CI: 0.0% - 12.5%]
 
 2. THREE-WAY CONFUSION MATRIX
                           Pred REAL    Pred INCONCLUSIVE    Pred FAKE
