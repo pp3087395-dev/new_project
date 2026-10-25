@@ -28,9 +28,9 @@ class FrequencyAnalysisSchema(BaseModel):
     disclaimer: str
 
 class AIClassificationSchema(BaseModel):
-    model_id: str = "umm-maybe/AI-image-detector"
-    model_name: str = "ViT AI Image Detector (umm-maybe / Multi-Generator)"
-    model_version: str = "2.0.0"
+    model_id: str = "dima806/ai_vs_real_image_detection"
+    model_name: str = "ViT AI Image Forensics Classifier"
+    model_version: str = "2.1.0"
     status: str = Field(..., description="'success', 'unavailable', or 'error'")
     predicted_class: Optional[str] = Field(None, description="'REAL' or 'FAKE'")
     predicted_label_description: Optional[str] = Field(None, description="Human-readable description of predicted class")

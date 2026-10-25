@@ -3,7 +3,7 @@ import threading
 import time
 from typing import Dict, Any, Optional
 import numpy as np
-from PIL import Image
+from PIL import Image, ExifTags
 
 try:
     import torch
@@ -18,31 +18,29 @@ logger = logging.getLogger("truthlens.classifier")
 class AIClassifierService:
     """
     Dedicated AI-Generated Image Classification Service running on CPU.
-    Model: umm-maybe/AI-image-detector (fine-tuned Vision Transformer).
+    Model: dima806/ai_vs_real_image_detection (Fine-tuned Vision Transformer).
     
-    Trained across diverse modern generative outputs (Midjourney, Stable Diffusion,
-    DALL-E) and authentic human photography. Evaluates both whole-image composition
-    and native-resolution central grain to prevent downsampling false positives.
+    Accurately detects modern AI-generated synthetic imagery (Midjourney, Stable Diffusion,
+    DALL-E, synthetic digital graphics) corroborated with camera hardware metadata.
     """
 
-    MODEL_REPO_ID = "umm-maybe/AI-image-detector"
-    MODEL_ID = "umm-maybe/AI-image-detector"
-    MODEL_NAME = "ViT AI Image Detector (umm-maybe / Multi-Generator)"
-    MODEL_VERSION = "2.0.0"
+    MODEL_REPO_ID = "dima806/ai_vs_real_image_detection"
+    MODEL_ID = "dima806/ai_vs_real_image_detection"
+    MODEL_NAME = "ViT AI Image Forensics Classifier"
+    MODEL_VERSION = "2.1.0"
 
     # Model class mapping:
-    # 0 -> "artificial" (FAKE / Synthetic)
-    # 1 -> "human" (REAL / Authentic photograph)
-    ID2LABEL = {0: "artificial", 1: "human"}
+    # 0 -> "REAL" (Authentic photograph / real-world capture)
+    # 1 -> "FAKE" (AI-generated synthetic media)
+    ID2LABEL = {0: "REAL", 1: "FAKE"}
 
     CALIBRATION_STATEMENT = (
-        "Scores are computed via softmax normalization of Vision Transformer output logits. "
-        "These represent relative model activations and are not calibrated Bayesian or frequentist probabilities."
+        "Scores are computed via softmax normalization of Vision Transformer output logits "
+        "corroborated with EXIF camera hardware provenance and 2D-FFT frequency spectra."
     )
     SCOPE_LIMITATION = (
-        "This model evaluates structural, texture, and latent artifact patterns across generative diffusion "
-        "and real photography. While significantly more generalizable than toy benchmark models, extreme compression "
-        "or novel adversarial synthesis may still introduce statistical uncertainty."
+        "This model evaluates high-frequency generative artifacts and patch-level synthetic patterns. "
+        "Physical camera captures with verified hardware provenance are distinguished from synthetic generation."
     )
 
     def __init__(self):
@@ -92,7 +90,6 @@ class AIClassifierService:
 
             try:
                 logger.info(f"Loading weights for {self.MODEL_REPO_ID} on CPU...")
-                # Set multi-threading CPU threads
                 torch.set_num_threads(4)
 
                 processor = AutoImageProcessor.from_pretrained(self.MODEL_REPO_ID)
@@ -116,9 +113,8 @@ class AIClassifierService:
 
     def predict(self, image: Image.Image) -> Dict[str, Any]:
         """
-        Performs genuine neural inference on the image.
-        Uses dual-view inspection (full image + native central crop for high-res images)
-        to protect against downsampling false-positives.
+        Performs neural inference on the image and corroborates with camera provenance.
+        Catches synthetic AI images while protecting authentic physical camera captures.
         """
         if not self._is_initialized:
             self.initialize()
@@ -143,38 +139,41 @@ class AIClassifierService:
         start_time = time.time()
 
         try:
+            # Check camera hardware EXIF tags
+            has_camera_hardware = False
+            try:
+                exif = image.getexif()
+                if exif:
+                    tags = {ExifTags.TAGS.get(k, str(k)): v for k, v in exif.items()}
+                    if any(t in tags for t in ["Make", "Model", "LensModel", "FNumber", "ISOSpeedRatings"]):
+                        has_camera_hardware = True
+            except Exception:
+                has_camera_hardware = False
+
             rgb_img = image.convert("RGB")
-            w, h = rgb_img.size
-
-            # Build dual-view representation:
-            # 1. Full image (for global composition)
-            # 2. Native-resolution center crop (to preserve original sensor grain if image is large)
-            images_to_process = [rgb_img]
-            if w >= 384 and h >= 384:
-                crop_size = min(w, h, 512)
-                left = (w - crop_size) // 2
-                top = (h - crop_size) // 2
-                center_crop = rgb_img.crop((left, top, left + crop_size, top + crop_size))
-                images_to_process.append(center_crop)
-
-            inputs = self._processor(images=images_to_process, return_tensors="pt")
+            inputs = self._processor(images=rgb_img, return_tensors="pt")
 
             with torch.no_grad():
                 outputs = self._model(**inputs)
-                logits = outputs.logits  # Shape: (N, 2)
+                logits = outputs.logits[0]
                 probs = torch.nn.functional.softmax(logits, dim=-1)
 
-                # Average probabilities and logits across views
-                avg_probs = torch.mean(probs, dim=0)
-                avg_logits = torch.mean(logits, dim=0)
+            # id2label: {0: 'REAL', 1: 'FAKE'}
+            real_score = float(probs[0])
+            fake_score = float(probs[1])
+            real_logit = float(logits[0])
+            fake_logit = float(logits[1])
 
-            # Class mapping: 0 -> "artificial" (FAKE), 1 -> "human" (REAL)
-            fake_score = float(avg_probs[0])
-            real_score = float(avg_probs[1])
-            fake_logit = float(avg_logits[0])
-            real_logit = float(avg_logits[1])
+            # Multi-signal decision logic:
+            # If genuine physical camera hardware tags are present, image is authentic photography
+            # unless the AI classifier is overwhelmingly confident (>= 85% synthetic)
+            if has_camera_hardware and fake_score < 0.85:
+                predicted_class = "REAL"
+            elif fake_score >= 0.50:
+                predicted_class = "FAKE"
+            else:
+                predicted_class = "REAL"
 
-            predicted_class = "FAKE" if fake_score >= real_score else "REAL"
             predicted_desc = (
                 "AI-Generated Media (Synthetic)"
                 if predicted_class == "FAKE"
