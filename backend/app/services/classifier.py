@@ -1,28 +1,12 @@
+import os
+import sys
+import time
 import logging
 import threading
-import time
-from typing import Dict, Any, Optional
-import numpy as np
+from typing import Dict, Any, Optional, Tuple, List
 from PIL import Image, ImageOps
 
-# Lazy-imported in background thread during initialize() to ensure sub-second port binding on startup
-torch = None
-AutoImageProcessor = None
-AutoModelForImageClassification = None
-
-def _ensure_torch_imported():
-    global torch, AutoImageProcessor, AutoModelForImageClassification
-    if torch is None:
-        try:
-            import torch as _torch
-            from transformers import AutoImageProcessor as _AIP, AutoModelForImageClassification as _AMIC
-            torch = _torch
-            AutoImageProcessor = _AIP
-            AutoModelForImageClassification = _AMIC
-        except ImportError:
-            torch = None
-            AutoImageProcessor = None
-            AutoModelForImageClassification = None
+logger = logging.getLogger("truthlens.classifier")
 
 def safe_to_rgb(image: Image.Image) -> Image.Image:
     """Safely converts any PIL image mode to standard 8-bit RGB with white alpha composite."""
@@ -52,58 +36,244 @@ def safe_to_rgb(image: Image.Image) -> Image.Image:
 
     return image.convert("RGB")
 
-logger = logging.getLogger("truthlens.classifier")
+
+def build_label_mapping(id2label: Dict[Any, str], model_id: str) -> Dict[str, int]:
+    """
+    Dynamically maps Hugging Face classification labels to 'FAKE' and 'REAL' indices.
+    Never hardcodes index 0 or index 1.
+    """
+    fake_idx = None
+    real_idx = None
+
+    fake_keywords = ("artificial", "ai", "fake", "generated", "synthetic")
+    real_keywords = ("human", "hum", "real", "authentic")
+
+    for raw_idx, raw_label in id2label.items():
+        label = str(raw_label).lower().strip()
+        idx_int = int(raw_idx)
+        if any(kw in label for kw in fake_keywords):
+            fake_idx = idx_int
+        elif any(kw in label for kw in real_keywords):
+            real_idx = idx_int
+
+    if fake_idx is None or real_idx is None:
+        raise ValueError(
+            f"Unable to dynamically map model labels for '{model_id}' to FAKE and REAL. "
+            f"Config id2label={id2label}. Resolved fake_idx={fake_idx}, real_idx={real_idx}."
+        )
+
+    logger.info(
+        f"Dynamic label mapping for '{model_id}': "
+        f"FAKE -> index {fake_idx} ('{id2label[fake_idx]}'), "
+        f"REAL -> index {real_idx} ('{id2label[real_idx]}')"
+    )
+    return {"FAKE": fake_idx, "REAL": real_idx}
+
+
+class BaseClassifierBackend:
+    backend_key: str
+    model_id: str
+    model_name: str
+    model_version: str
+
+    def initialize(self, hf_token: Optional[str] = None):
+        raise NotImplementedError
+
+    def predict_fake_probability(self, image: Image.Image) -> Tuple[float, int, Optional[Dict[str, float]]]:
+        """Returns (fake_probability_in_range_0_to_1, views_evaluated, optional_raw_logits)."""
+        raise NotImplementedError
+
+
+class SigLIPBackend(BaseClassifierBackend):
+    backend_key = "siglip"
+    model_id = "Ateeqq/ai-vs-human-image-detector"
+    model_name = "SigLIP AI Image Detector (Ateeqq / Multi-View)"
+    model_version = "1.0.0"
+
+    def __init__(self):
+        self.processor = None
+        self.model = None
+        self.label_mapping = None
+
+    def initialize(self, hf_token: Optional[str] = None):
+        import torch
+        from transformers import AutoImageProcessor, AutoModelForImageClassification
+        logger.info(f"Loading {self.model_id} on CPU...")
+        torch.set_num_threads(4)
+        self.processor = AutoImageProcessor.from_pretrained(self.model_id, token=hf_token)
+        self.model = AutoModelForImageClassification.from_pretrained(self.model_id, token=hf_token)
+        self.model.eval()
+        self.label_mapping = build_label_mapping(self.model.config.id2label, self.model_id)
+
+    def predict_fake_probability(self, image: Image.Image) -> Tuple[float, int, Optional[Dict[str, float]]]:
+        import torch
+        img = safe_to_rgb(ImageOps.exif_transpose(image) or image)
+        w, h = img.size
+        tile_size = 224
+
+        views = [img]
+        # Multi-view tiling: if image is large, take up to 4 native-resolution 224x224 crops
+        if w >= tile_size and h >= tile_size:
+            c_x = (w - tile_size) // 2
+            c_y = (h - tile_size) // 2
+            views.append(img.crop((c_x, c_y, c_x + tile_size, c_y + tile_size)))
+
+            if c_x > 0 or c_y > 0:
+                views.append(img.crop((0, 0, tile_size, tile_size)))
+
+            if w - tile_size > 0 or h - tile_size > 0:
+                views.append(img.crop((w - tile_size, h - tile_size, w, h)))
+
+            if w - tile_size > 0:
+                views.append(img.crop((w - tile_size, 0, w, tile_size)))
+
+        views = views[:5]
+        inputs = self.processor(images=views, return_tensors="pt")
+        with torch.no_grad():
+            outputs = self.model(**inputs)
+            logits = outputs.logits  # Shape (V, 2)
+            probs = torch.softmax(logits, dim=-1)
+
+        fake_idx = self.label_mapping["FAKE"]
+        real_idx = self.label_mapping["REAL"]
+
+        fake_probs = probs[:, fake_idx]
+        avg_fake_prob = float(torch.mean(fake_probs).item())
+        avg_logits = {
+            "FAKE": float(torch.mean(logits[:, fake_idx]).item()),
+            "REAL": float(torch.mean(logits[:, real_idx]).item())
+        }
+        return avg_fake_prob, len(views), avg_logits
+
+
+class SmaugBackend(BaseClassifierBackend):
+    backend_key = "smaug"
+    model_id = "abacusai/Smaug-AI-Image-Detector"
+    model_name = "Smaug AI Image Detector (Abacus AI)"
+    model_version = "1.0.0"
+
+    def __init__(self):
+        self.detector = None
+        self.crops = int(os.environ.get("SMAUG_CROPS", "3"))
+
+    def initialize(self, hf_token: Optional[str] = None):
+        from huggingface_hub import snapshot_download
+        logger.info(f"Resolving snapshot for {self.model_id}...")
+        model_dir = snapshot_download(repo_id=self.model_id, token=hf_token)
+        if model_dir not in sys.path:
+            sys.path.insert(0, model_dir)
+        from smaug_image_detect import SmaugImageDetect
+        logger.info(f"Loading Smaug detector from {model_dir} (crops={self.crops})...")
+        self.detector = SmaugImageDetect.from_pretrained(model_dir)
+
+    def predict_fake_probability(self, image: Image.Image) -> Tuple[float, int, Optional[Dict[str, float]]]:
+        img = safe_to_rgb(ImageOps.exif_transpose(image) or image)
+        prob = self.detector(img, crops=self.crops)
+        fake_prob = float(prob)
+        return fake_prob, self.crops, None
+
+
+class LegacyBackend(BaseClassifierBackend):
+    backend_key = "legacy"
+    model_id = "umm-maybe/AI-image-detector"
+    model_name = "ViT AI Image Detector (umm-maybe / Baseline)"
+    model_version = "2.0.0"
+
+    def __init__(self):
+        self.processor = None
+        self.model = None
+        self.label_mapping = None
+
+    def initialize(self, hf_token: Optional[str] = None):
+        import torch
+        from transformers import AutoImageProcessor, AutoModelForImageClassification
+        logger.info(f"Loading legacy model {self.model_id} on CPU...")
+        torch.set_num_threads(4)
+        self.processor = AutoImageProcessor.from_pretrained(self.model_id, token=hf_token)
+        self.model = AutoModelForImageClassification.from_pretrained(self.model_id, token=hf_token)
+        self.model.eval()
+        self.label_mapping = build_label_mapping(self.model.config.id2label, self.model_id)
+
+    def predict_fake_probability(self, image: Image.Image) -> Tuple[float, int, Optional[Dict[str, float]]]:
+        import torch
+        img = safe_to_rgb(ImageOps.exif_transpose(image) or image)
+        inputs = self.processor(images=[img], return_tensors="pt")
+        with torch.no_grad():
+            outputs = self.model(**inputs)
+            logits = outputs.logits[0]
+            probs = torch.softmax(logits, dim=-1)
+
+        fake_idx = self.label_mapping["FAKE"]
+        real_idx = self.label_mapping["REAL"]
+
+        fake_prob = float(probs[fake_idx].item())
+        raw_logits = {
+            "FAKE": float(logits[fake_idx].item()),
+            "REAL": float(logits[real_idx].item())
+        }
+        return fake_prob, 1, raw_logits
+
 
 class AIClassifierService:
     """
-    Dedicated AI-Generated Image Classification Service running on CPU.
-    Model: umm-maybe/AI-image-detector (fine-tuned Vision Transformer).
-    
-    Trained across diverse modern generative outputs (Midjourney, Stable Diffusion,
-    DALL-E) and authentic human photography. Evaluates both whole-image composition
-    and native-resolution central grain to prevent downsampling false positives.
+    Unified AI-Generated Image Classification Service supporting multiple backends:
+    - 'siglip' (Default): Ateeqq/ai-vs-human-image-detector (92.9M SigLIP with multi-view native tiling)
+    - 'smaug': abacusai/Smaug-AI-Image-Detector (439M high-accuracy model with native crops)
+    - 'legacy': umm-maybe/AI-image-detector (2022 VQGAN baseline for before/after comparison)
     """
-
-    MODEL_REPO_ID = "umm-maybe/AI-image-detector"
-    MODEL_ID = "umm-maybe/AI-image-detector"
-    MODEL_NAME = "ViT AI Image Detector (umm-maybe / Multi-Generator)"
-    MODEL_VERSION = "2.0.0"
-
-    # Model class mapping:
-    # 0 -> "artificial" (FAKE / Synthetic)
-    # 1 -> "human" (REAL / Authentic photograph)
-    ID2LABEL = {0: "artificial", 1: "human"}
 
     CALIBRATION_STATEMENT = (
         "Scores are computed via softmax normalization of Vision Transformer output logits. "
         "These represent relative model activations and are not calibrated Bayesian or frequentist probabilities."
     )
     SCOPE_LIMITATION = (
-        "This model evaluates structural, texture, and latent artifact patterns across generative diffusion "
-        "and real photography. While significantly more generalizable than toy benchmark models, extreme compression "
-        "or novel adversarial synthesis may still introduce statistical uncertainty."
+        "This model evaluates structural, texture, and latent artifact patterns across synthetic "
+        "and real photography. Extreme compression or novel adversarial synthesis may introduce uncertainty."
     )
 
     def __init__(self):
-        self._model: Optional[Any] = None
-        self._processor: Optional[Any] = None
+        self._backend_key = os.environ.get("CLASSIFIER_BACKEND", "siglip").lower().strip()
+        self._hf_token = os.environ.get("HF_TOKEN") or os.environ.get("HUGGING_FACE_HUB_TOKEN")
+        self._backend: Optional[BaseClassifierBackend] = None
         self._is_initialized: bool = False
         self._is_loading: bool = False
         self._init_error: Optional[str] = None
         self._lock = threading.Lock()
 
+        self._select_backend(self._backend_key)
+
+    def _select_backend(self, key: str):
+        if key == "smaug":
+            self._backend = SmaugBackend()
+        elif key == "legacy":
+            self._backend = LegacyBackend()
+        else:
+            self._backend = SigLIPBackend()
+        self._backend_key = self._backend.backend_key
+
     @property
-    def _session(self) -> Optional[Any]:
-        """Backward compatibility alias for test suite and external references."""
-        return self._model
+    def MODEL_NAME(self) -> str:
+        return self._backend.model_name if self._backend else "AI Image Detector"
+
+    @property
+    def MODEL_ID(self) -> str:
+        return self._backend.model_id if self._backend else "unknown"
+
+    @property
+    def MODEL_VERSION(self) -> str:
+        return self._backend.model_version if self._backend else "1.0.0"
+
+    @property
+    def backend_key(self) -> str:
+        return self._backend_key
 
     @property
     def is_available(self) -> bool:
-        return self._is_initialized and self._model is not None
+        return self._is_initialized and self._backend is not None
 
     @property
     def status(self) -> str:
-        if self._is_initialized and self._model is not None:
+        if self._is_initialized and self._backend is not None:
             return "ready"
         if self._init_error:
             return "error"
@@ -114,10 +284,6 @@ class AIClassifierService:
         return self._init_error
 
     def initialize(self) -> bool:
-        """
-        Loads and initializes the Hugging Face model and processor once on CPU.
-        Reuses cached weights if available. Thread-safe singleton pattern.
-        """
         if self._is_initialized:
             return True
 
@@ -128,45 +294,43 @@ class AIClassifierService:
             self._is_loading = True
             self._init_error = None
 
-            _ensure_torch_imported()
-
-            if torch is None or AutoImageProcessor is None or AutoModelForImageClassification is None:
-                self._init_error = "PyTorch or HuggingFace transformers is not installed."
-                logger.error(self._init_error)
-                self._is_loading = False
-                return False
-
             try:
-                logger.info(f"Loading weights for {self.MODEL_REPO_ID} on CPU...")
-                # Set multi-threading CPU threads
-                torch.set_num_threads(4)
+                current_backend_key = os.environ.get("CLASSIFIER_BACKEND", self._backend_key).lower().strip()
+                if current_backend_key != self._backend_key:
+                    self._select_backend(current_backend_key)
 
-                processor = AutoImageProcessor.from_pretrained(self.MODEL_REPO_ID)
-                model = AutoModelForImageClassification.from_pretrained(self.MODEL_REPO_ID)
-                model.eval()
-
-                self._processor = processor
-                self._model = model
+                hf_token = os.environ.get("HF_TOKEN") or os.environ.get("HUGGING_FACE_HUB_TOKEN")
+                self._backend.initialize(hf_token=hf_token)
                 self._is_initialized = True
                 self._init_error = None
-                logger.info(f"{self.MODEL_NAME} initialized successfully on CPU.")
+                logger.info(f"{self.MODEL_NAME} ({self._backend_key}) initialized successfully.")
                 return True
-
             except Exception as e:
-                self._init_error = f"Failed to initialize AI model: {str(e)}"
+                self._init_error = f"Failed to initialize {self._backend_key} backend: {str(e)}"
                 self._is_initialized = False
-                self._model = None
-                self._processor = None
                 logger.error(self._init_error, exc_info=True)
                 return False
             finally:
                 self._is_loading = False
 
+    def predict_fake_probability(self, pil_image: Image.Image) -> float:
+        """
+        Unified public interface returning float in [0.0, 1.0] representing
+        the probability that the image is AI-generated (FAKE).
+        """
+        if not self._is_initialized:
+            self.initialize()
+
+        if not self.is_available:
+            raise RuntimeError(f"AI classifier is unavailable: {self._init_error}")
+
+        fake_prob, _, _ = self._backend.predict_fake_probability(pil_image)
+        return fake_prob
+
     def predict(self, image: Image.Image) -> Dict[str, Any]:
         """
-        Performs genuine neural inference on the image.
-        Uses dual-view inspection (full image + native central crop for high-res images)
-        to protect against downsampling false-positives.
+        Full forensic inspection returning calibrated dict with predicted_class,
+        confidence, scores, latency, and views evaluated.
         """
         if not self._is_initialized:
             self.initialize()
@@ -182,6 +346,7 @@ class AIClassifierService:
                 "confidence_score": None,
                 "scores": None,
                 "raw_logits": None,
+                "views_evaluated": None,
                 "calibration_statement": self.CALIBRATION_STATEMENT,
                 "scope_limitation": self.SCOPE_LIMITATION,
                 "inference_time_ms": None,
@@ -189,41 +354,20 @@ class AIClassifierService:
             }
 
         start_time = time.time()
-
         try:
-            # Ensure upright orientation and safe RGB conversion (compositing transparent alpha on white)
-            image_upright = ImageOps.exif_transpose(image) or image
-            rgb_img = safe_to_rgb(image_upright)
+            fake_prob, views_evaluated, raw_logits = self._backend.predict_fake_probability(image)
+            elapsed_ms = round((time.time() - start_time) * 1000, 2)
 
-            # Preprocessing will be redone per backend in Step 4.
-            # Removed misleading native-resolution crop because HF processor resizes all views to 224px.
-            images_to_process = [rgb_img]
-            inputs = self._processor(images=images_to_process, return_tensors="pt")
+            real_prob = max(0.0, min(1.0, 1.0 - fake_prob))
+            fake_prob = max(0.0, min(1.0, fake_prob))
 
-            with torch.no_grad():
-                outputs = self._model(**inputs)
-                logits = outputs.logits  # Shape: (N, 2)
-                probs = torch.nn.functional.softmax(logits, dim=-1)
-
-                # Average probabilities and logits across views
-                avg_probs = torch.mean(probs, dim=0)
-                avg_logits = torch.mean(logits, dim=0)
-
-            # Class mapping: 0 -> "artificial" (FAKE), 1 -> "human" (REAL)
-            fake_score = float(avg_probs[0])
-            real_score = float(avg_probs[1])
-            fake_logit = float(avg_logits[0])
-            real_logit = float(avg_logits[1])
-
-            predicted_class = "FAKE" if fake_score >= real_score else "REAL"
+            predicted_class = "FAKE" if fake_prob >= 0.5 else "REAL"
             predicted_desc = (
                 "AI-Generated Media (Synthetic)"
                 if predicted_class == "FAKE"
                 else "Authentic Photograph / Real-World Media"
             )
-
-            confidence_score = round((fake_score if predicted_class == "FAKE" else real_score) * 100.0, 2)
-            elapsed_ms = round((time.time() - start_time) * 1000, 2)
+            confidence_score = round(max(fake_prob, real_prob) * 100.0, 2)
 
             return {
                 "status": "success",
@@ -234,21 +378,19 @@ class AIClassifierService:
                 "predicted_label_description": predicted_desc,
                 "confidence_score": confidence_score,
                 "scores": {
-                    "REAL": round(real_score, 4),
-                    "FAKE": round(fake_score, 4),
+                    "REAL": round(real_prob, 4),
+                    "FAKE": round(fake_prob, 4),
                 },
-                "raw_logits": {
-                    "REAL": round(real_logit, 4),
-                    "FAKE": round(fake_logit, 4),
-                },
+                "raw_logits": raw_logits,
+                "views_evaluated": views_evaluated,
                 "calibration_statement": self.CALIBRATION_STATEMENT,
                 "scope_limitation": self.SCOPE_LIMITATION,
                 "inference_time_ms": elapsed_ms,
                 "error_message": None,
             }
-
         except Exception as e:
-            logger.error(f"Inference error: {str(e)}", exc_info=True)
+            elapsed_ms = round((time.time() - start_time) * 1000, 2)
+            logger.error(f"Inference error in {self.MODEL_NAME}: {e}", exc_info=True)
             return {
                 "status": "error",
                 "model_id": self.MODEL_ID,
@@ -259,11 +401,11 @@ class AIClassifierService:
                 "confidence_score": None,
                 "scores": None,
                 "raw_logits": None,
+                "views_evaluated": None,
                 "calibration_statement": self.CALIBRATION_STATEMENT,
                 "scope_limitation": self.SCOPE_LIMITATION,
-                "inference_time_ms": None,
-                "error_message": f"Inference execution failed: {str(e)}",
+                "inference_time_ms": elapsed_ms,
+                "error_message": f"Inference failure: {str(e)}",
             }
 
-# Global singleton instance
 classifier_service = AIClassifierService()

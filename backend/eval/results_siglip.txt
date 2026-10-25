@@ -1,0 +1,65 @@
+===========================================================================
+                 TRUTHLENS FORENSIC MODEL EVALUATION REPORT
+===========================================================================
+Model Backend     : siglip (SigLIP AI Image Detector (Ateeqq / Multi-View))
+Dataset Size      : 55 images (28 Real, 27 Fake)
+Average Latency   : 788.1 ms / image on CPU
+Peak Working RAM  : 883.9 MB
+Default Cutoff    : 0.50
+---------------------------------------------------------------------------
+1. PERFORMANCE SUMMARY (Threshold = 0.50)
+   Accuracy               : 63.64% (35/55)
+   False Positive Rate    : 10.71% (3/28 real photos called fake)
+   False Negative Rate    : 62.96% (17/27 AI images missed as real)
+
+2. CONFUSION MATRIX
+                          Predicted REAL      Predicted FAKE
+   Actual REAL (Authentic):   TN =   25           FP =    3
+   Actual FAKE (Synthetic):   FN =   17           TP =   10
+---------------------------------------------------------------------------
+3. MISCLASSIFIED FILES (20 total):
+   - [REAL -> Pred FAKE] 3.jpeg                              (FakeProb:  59.8%)
+   - [REAL -> Pred FAKE] 5.jpeg                              (FakeProb:  60.1%)
+   - [REAL -> Pred FAKE] 555.jpeg                            (FakeProb:  59.3%)
+   - [FAKE -> Pred REAL] 4-year-old boy.webp                 (FakeProb:  20.0%)
+   - [FAKE -> Pred REAL] A black man; cushite; tight nappy curls low level.webp (FakeProb:  39.1%)
+   - [FAKE -> Pred REAL] a cat in a business suit sitting in a crowded subw.webp (FakeProb:  40.0%)
+   - [FAKE -> Pred REAL] A girl with long straight hair in 80’s anime vinta.webp (FakeProb:  40.2%)
+   - [FAKE -> Pred REAL] A pretty girl in san francisco.webp (FakeProb:  40.2%)
+   - [FAKE -> Pred REAL] A pretty girl in Tokyo.webp         (FakeProb:  40.2%)
+   - [FAKE -> Pred REAL] a professional production photo of a Lara Croft le.webp (FakeProb:  21.4%)
+   - [FAKE -> Pred REAL] a realistic version of calvin and hobbes.webp (FakeProb:  40.0%)
+   - [FAKE -> Pred REAL] a young woman photographed with soft lighting agai.webp (FakeProb:  25.5%)
+   - [FAKE -> Pred REAL] An extremely unremarkable iPhone photo with no cle.webp (FakeProb:   0.1%)
+   - [FAKE -> Pred REAL] attractive woman in stockings.webp  (FakeProb:  20.8%)
+   - [FAKE -> Pred REAL] grungy photo of Kirby shown during a tour of duty.webp (FakeProb:  20.0%)
+   - [FAKE -> Pred REAL] Japanese.webp                       (FakeProb:  20.1%)
+   - [FAKE -> Pred REAL] movie scene.webp                    (FakeProb:  20.1%)
+   - [FAKE -> Pred REAL] silver KITH jacket.webp             (FakeProb:  40.0%)
+   - [FAKE -> Pred REAL] the stock trading floor is filled with water.webp (FakeProb:  20.3%)
+   - [FAKE -> Pred REAL] very pretty caucasian girl at age 18(with subtle a.webp (FakeProb:  21.3%)
+---------------------------------------------------------------------------
+4. OPTIMAL THRESHOLD SWEEP (0.05 to 0.95)
+   Threshold | Accuracy | FPR (Real->Fake) | FNR (Fake->Real)
+      0.05   |   61.8%  |       71.4%      |        3.7%
+      0.10   |   61.8%  |       71.4%      |        3.7%
+      0.15   |   61.8%  |       71.4%      |        3.7%
+      0.20   |   63.6%  |       67.9%      |        3.7%
+      0.25   |   65.5%  |       35.7%      |       33.3%
+      0.30   |   63.6%  |       35.7%      |       37.0%
+      0.35   |   63.6%  |       35.7%      |       37.0%
+      0.40   |   69.1%  |       17.9%      |       44.4% <-- OPTIMAL
+      0.45   |   63.6%  |       10.7%      |       63.0%
+      0.50   |   63.6%  |       10.7%      |       63.0%
+      0.55   |   63.6%  |       10.7%      |       63.0%
+      0.60   |   61.8%  |        3.6%      |       74.1%
+      0.65   |   56.4%  |        0.0%      |       88.9%
+      0.70   |   56.4%  |        0.0%      |       88.9%
+      0.75   |   54.5%  |        0.0%      |       92.6%
+      0.80   |   50.9%  |        0.0%      |      100.0%
+      0.85   |   50.9%  |        0.0%      |      100.0%
+      0.90   |   50.9%  |        0.0%      |      100.0%
+      0.95   |   50.9%  |        0.0%      |      100.0%
+---------------------------------------------------------------------------
+   RECOMMENDED OPTIMAL THRESHOLD: 0.40 (Accuracy: 69.1%, FPR: 17.9%)
+===========================================================================

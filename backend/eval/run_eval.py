@@ -50,8 +50,23 @@ def parse_args():
     return parser.parse_args()
 
 
+def get_process_peak_ram_mb() -> float:
+    """Returns peak working set RAM of the current process in MB."""
+    try:
+        import os, subprocess
+        pid = os.getpid()
+        out = subprocess.check_output(
+            ["powershell", "-NoProfile", "-Command", f"(Get-Process -Id {pid}).PeakWorkingSet64 / 1MB"],
+            text=True,
+            timeout=5.0
+        )
+        return round(float(out.strip()), 1)
+    except Exception:
+        return 0.0
+
+
 class ModelPredictor:
-    """Wrapper providing a unified fake-probability prediction interface."""
+    """Wrapper providing a unified fake-probability prediction interface matching production."""
 
     def __init__(self, backend: str):
         self.backend = backend
@@ -59,79 +74,38 @@ class ModelPredictor:
 
     def _init_backend(self):
         print(f"[*] Initializing model backend: '{self.backend}'...")
+        hf_token = os.environ.get("HF_TOKEN") or os.environ.get("HUGGING_FACE_HUB_TOKEN")
+
         if self.backend == "legacy":
-            from app.services.classifier import classifier_service
-            if not classifier_service.is_available:
-                success = classifier_service.initialize()
-                if not success:
-                    raise RuntimeError(f"Failed to initialize legacy classifier: {classifier_service.error_details}")
-            self.service = classifier_service
-            self.model_name = classifier_service.MODEL_NAME
+            from app.services.classifier import LegacyBackend
+            self.service = LegacyBackend()
+            self.service.initialize(hf_token=hf_token)
+            self.model_name = self.service.model_name
 
         elif self.backend == "siglip":
-            from transformers import AutoImageProcessor, AutoModelForImageClassification
-            import torch
-            model_id = "Ateeqq/ai-vs-human-image-detector"
-            print(f"[*] Loading {model_id} on CPU...")
-            torch.set_num_threads(4)
-            self.processor = AutoImageProcessor.from_pretrained(model_id)
-            self.model = AutoModelForImageClassification.from_pretrained(model_id)
-            self.model.eval()
-            self.id2label = self.model.config.id2label
-            self.model_name = f"Ateeqq SigLIP ({model_id})"
+            from app.services.classifier import SigLIPBackend
+            self.service = SigLIPBackend()
+            self.service.initialize(hf_token=hf_token)
+            self.model_name = self.service.model_name
 
         elif self.backend == "smaug":
             try:
-                from huggingface_hub import snapshot_download
-                import torch
-                model_id = "abacusai/Smaug-AI-Image-Detector"
-                print(f"[*] Resolving snapshot for {model_id}...")
-                model_dir = snapshot_download(repo_id=model_id)
-                if model_dir not in sys.path:
-                    sys.path.insert(0, model_dir)
-                from smaug_image_detect import SmaugImageDetect
-                crops = int(os.environ.get("SMAUG_CROPS", "3"))
-                self.detector = SmaugImageDetect.from_pretrained(model_dir, crops=crops)
-                self.model_name = f"AbacusAI Smaug ({model_id})"
+                from app.services.classifier import SmaugBackend
+                self.service = SmaugBackend()
+                self.service.initialize(hf_token=hf_token)
+                self.model_name = self.service.model_name
             except Exception as e:
                 raise RuntimeError(
                     f"Smaug backend unavailable: {e}. "
-                    "Ensure 'sentence-transformers[image]' and torch are installed."
+                    "Ensure 'sentence-transformers[image]' and 'torchvision' are installed."
                 )
+        else:
+            raise ValueError(f"Unknown backend: {self.backend}")
 
-    def predict_fake_prob(self, img: Image.Image) -> float:
-        """Returns float in [0.0, 1.0] representing the probability that the image is AI-generated (FAKE)."""
-        if self.backend == "legacy":
-            res = self.service.predict(img)
-            if res.get("status") != "success":
-                raise RuntimeError(f"Legacy model inference error: {res.get('error_message')}")
-            return float(res["scores"]["FAKE"])
-
-        elif self.backend == "siglip":
-            import torch
-            rgb_img = img.convert("RGB")
-            inputs = self.processor(images=rgb_img, return_tensors="pt")
-            with torch.no_grad():
-                logits = self.model(**inputs).logits[0]
-                probs = torch.nn.functional.softmax(logits, dim=-1)
-
-            # Map label: id2label contains 'ai' and 'hum'
-            ai_idx = None
-            for idx, label in self.id2label.items():
-                if "ai" in str(label).lower() or "artificial" in str(label).lower():
-                    ai_idx = int(idx)
-                    break
-            if ai_idx is None:
-                ai_idx = 0
-            return float(probs[ai_idx])
-
-        elif self.backend == "smaug":
-            rgb_img = img.convert("RGB")
-            # Smaug detector callable directly outputs probability of being AI-generated in [0, 1]
-            prob = self.detector(rgb_img)
-            return float(prob)
-
-        raise ValueError(f"Unknown backend: {self.backend}")
+    def predict_fake_prob(self, img: Image.Image) -> Tuple[float, int]:
+        """Returns (fake_prob in [0.0, 1.0], views_evaluated)."""
+        fake_prob, views, _ = self.service.predict_fake_probability(img)
+        return fake_prob, views
 
 
 def collect_images(folder: Path) -> List[Path]:
@@ -179,7 +153,7 @@ def run_evaluation(backend: str, default_threshold: float = 0.50) -> Tuple[str, 
         try:
             t0 = time.time()
             with Image.open(path) as img:
-                fake_prob = predictor.predict_fake_prob(img)
+                fake_prob, views = predictor.predict_fake_prob(img)
             lat = (time.time() - t0) * 1000
             latencies.append(lat)
             results.append({
@@ -188,9 +162,10 @@ def run_evaluation(backend: str, default_threshold: float = 0.50) -> Tuple[str, 
                 "ground_truth": "REAL",
                 "ground_truth_num": 0,
                 "fake_prob": fake_prob,
+                "views": views,
                 "latency_ms": lat
             })
-            print(f"  [{idx}/{len(real_files)}] Real: {path.name:35} -> FakeProb: {fake_prob*100:5.1f}% ({lat:.0f}ms)")
+            print(f"  [{idx}/{len(real_files)}] Real: {path.name:35} -> FakeProb: {fake_prob*100:5.1f}% ({views} views, {lat:.0f}ms)")
         except Exception as e:
             print(f"  [ERROR] Failed to evaluate {path.name}: {e}")
 
@@ -200,7 +175,7 @@ def run_evaluation(backend: str, default_threshold: float = 0.50) -> Tuple[str, 
         try:
             t0 = time.time()
             with Image.open(path) as img:
-                fake_prob = predictor.predict_fake_prob(img)
+                fake_prob, views = predictor.predict_fake_prob(img)
             lat = (time.time() - t0) * 1000
             latencies.append(lat)
             results.append({
@@ -209,9 +184,10 @@ def run_evaluation(backend: str, default_threshold: float = 0.50) -> Tuple[str, 
                 "ground_truth": "FAKE",
                 "ground_truth_num": 1,
                 "fake_prob": fake_prob,
+                "views": views,
                 "latency_ms": lat
             })
-            print(f"  [{idx}/{len(fake_files)}] Fake: {path.name:35} -> FakeProb: {fake_prob*100:5.1f}% ({lat:.0f}ms)")
+            print(f"  [{idx}/{len(fake_files)}] Fake: {path.name:35} -> FakeProb: {fake_prob*100:5.1f}% ({views} views, {lat:.0f}ms)")
         except Exception as e:
             print(f"  [ERROR] Failed to evaluate {path.name}: {e}")
 
@@ -267,7 +243,10 @@ def run_evaluation(backend: str, default_threshold: float = 0.50) -> Tuple[str, 
             best_fpr = t_fpr
             best_thresh = t
 
-    # 5. Build Formatted Report
+    # 5. Measure Peak Process RAM
+    peak_ram_mb = get_process_peak_ram_mb()
+
+    # 6. Build Formatted Report
     lines = []
     lines.append("=" * 75)
     lines.append("                 TRUTHLENS FORENSIC MODEL EVALUATION REPORT")
@@ -275,6 +254,7 @@ def run_evaluation(backend: str, default_threshold: float = 0.50) -> Tuple[str, 
     lines.append(f"Model Backend     : {backend} ({predictor.model_name})")
     lines.append(f"Dataset Size      : {total_eval} images ({total_real} Real, {total_fake} Fake)")
     lines.append(f"Average Latency   : {avg_latency:.1f} ms / image on CPU")
+    lines.append(f"Peak Working RAM  : {peak_ram_mb:.1f} MB")
     lines.append(f"Default Cutoff    : {default_threshold:.2f}")
     lines.append("-" * 75)
     lines.append("1. PERFORMANCE SUMMARY (Threshold = {:.2f})".format(default_threshold))
@@ -317,6 +297,7 @@ def run_evaluation(backend: str, default_threshold: float = 0.50) -> Tuple[str, 
         "fpr": fpr,
         "fnr": fnr,
         "avg_latency_ms": avg_latency,
+        "peak_ram_mb": peak_ram_mb,
         "best_threshold": best_thresh,
         "best_accuracy": best_acc,
         "best_fpr": best_fpr,
@@ -331,8 +312,8 @@ def main():
     report, data = run_evaluation(args.backend, args.threshold)
 
     output_path = args.output
-    if output_path is None and args.backend == "legacy" and not data.get("empty"):
-        output_path = str(SCRIPT_DIR / "results_legacy.txt")
+    if output_path is None and not data.get("empty"):
+        output_path = str(SCRIPT_DIR / f"results_{args.backend}.txt")
 
     if output_path and not data.get("empty"):
         out_file = Path(output_path)
