@@ -369,7 +369,9 @@ class MediaDetectorService:
             "Cross-reference the image with reverse-image search engines (Google Lens, TinEye) to trace publication history."
         ]
 
-        audit_id = f"TL-FOR-{hashlib.md5(file_bytes[:64]).hexdigest()[:6].upper()}"
+        # Audit ID: TL- followed by first 10 uppercase hex characters of the file SHA-256 hash
+        hex_digest = sha256_hash.replace("sha256:", "")
+        audit_id = f"TL-{hex_digest[:10].upper()}"
 
         return ForensicAnalysisResponse(
             status="success",

@@ -60,6 +60,47 @@ export const analysisService = {
   },
 
   /**
+   * Generates a downscaled JPEG data-URL thumbnail (max 320px) on the client canvas.
+   * Replaces ephemeral URL.createObjectURL(file) blob URLs that expire upon session/reload,
+   * ensuring history and dashboard previews persist indefinitely without localStorage overflow.
+   */
+  async createDownscaledThumbnail(file: File, maxDim = 320): Promise<string> {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          let w = img.width;
+          let h = img.height;
+          if (w > maxDim || h > maxDim) {
+            if (w > h) {
+              h = Math.round((h * maxDim) / w);
+              w = maxDim;
+            } else {
+              w = Math.round((w * maxDim) / h);
+              h = maxDim;
+            }
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = Math.max(1, w);
+          canvas.height = Math.max(1, h);
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            ctx.drawImage(img, 0, 0, w, h);
+            resolve(canvas.toDataURL('image/jpeg', 0.82));
+          } else {
+            resolve((e.target?.result as string) || '');
+          }
+        };
+        img.onerror = () => resolve((e.target?.result as string) || '');
+        img.src = (e.target?.result as string) || '';
+      };
+      reader.onerror = () => resolve('');
+      reader.readAsDataURL(file);
+    });
+  },
+
+  /**
    * Main analysis dispatcher.
    * If an actual file is uploaded, sends multipart/form-data to the FastAPI backend.
    * If a demonstrative sample is selected, runs the clearly labeled demo simulation.
@@ -75,7 +116,7 @@ export const analysisService = {
     // -------------------------------------------------------------
     if (!isSample && file instanceof File) {
       const backendUrl = this.getBackendUrl();
-      const mediaUrl = URL.createObjectURL(file);
+      const mediaUrl = await this.createDownscaledThumbnail(file, 320);
       const isVideo = file.type.startsWith('video') || file.name.match(/\.(mp4|mov|webm)$/i) !== null;
 
       if (isVideo) {

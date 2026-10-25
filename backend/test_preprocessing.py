@@ -136,18 +136,26 @@ def test_full_pipeline_with_rgba_and_orientation():
     res = detector_service.analyze_image(file_bytes, "test_alpha.png")
     assert res.status == "success"
     assert res.frequency_analysis.fft_visualization_base64.startswith("data:image/png;base64,")
+    # Verify Step 6 Audit ID format: TL- followed by first 10 uppercase hex chars of SHA-256
+    raw_hex = res.sha256_hash.replace("sha256:", "")
+    expected_id = f"TL-{raw_hex[:10].upper()}"
+    assert res.id == expected_id, f"Expected audit ID '{expected_id}', got '{res.id}'"
+    assert len(res.id) == 13, f"Expected 13 chars, got {len(res.id)}"
+    # Verify that the 10 characters after TL- are valid hexadecimal
+    int(res.id[3:], 16)
+    print(f"[OK] Audit ID successfully verified: '{res.id}' (10 hex characters from SHA-256).")
     print("[OK] analyze_image pipeline successfully processed RGBA PNG through FFT and AI classifier.")
 
 def run_all_tests():
     print("=" * 60)
-    print("        RUNNING STEP 3 PREPROCESSING UNIT TESTS")
+    print("        RUNNING STEP 3 & STEP 6 UNIT TESTS")
     print("=" * 60)
     test_rotated_exif_image()
     test_rgba_and_color_modes()
     test_exif_rich_jpeg()
     test_full_pipeline_with_rgba_and_orientation()
     print("=" * 60)
-    print("ALL STEP 3 UNIT TESTS PASSED SUCCESSFULLY!")
+    print("ALL TESTS PASSED SUCCESSFULLY!")
     print("=" * 60)
 
 if __name__ == "__main__":
