@@ -3,7 +3,7 @@ import threading
 import time
 from typing import Dict, Any, Optional
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageOps
 
 # Lazy-imported in background thread during initialize() to ensure sub-second port binding on startup
 torch = None
@@ -23,6 +23,34 @@ def _ensure_torch_imported():
             torch = None
             AutoImageProcessor = None
             AutoModelForImageClassification = None
+
+def safe_to_rgb(image: Image.Image) -> Image.Image:
+    """Safely converts any PIL image mode to standard 8-bit RGB with white alpha composite."""
+    if image.mode == "RGB":
+        return image
+
+    if image.mode == "P":
+        if "transparency" in image.info:
+            image = image.convert("RGBA")
+        else:
+            return image.convert("RGB")
+
+    if image.mode in ("RGBA", "LA") or (image.mode == "P" and "transparency" in image.info):
+        rgba = image.convert("RGBA")
+        white_bg = Image.new("RGBA", rgba.size, (255, 255, 255, 255))
+        composite = Image.alpha_composite(white_bg, rgba)
+        return composite.convert("RGB")
+
+    if image.mode == "CMYK":
+        return image.convert("RGB")
+
+    if image.mode in ("L", "1"):
+        return image.convert("RGB")
+
+    if image.mode in ("I", "F", "I;16", "I;16L", "I;16B", "I;16N"):
+        return image.convert("L").convert("RGB")
+
+    return image.convert("RGB")
 
 logger = logging.getLogger("truthlens.classifier")
 
@@ -163,20 +191,13 @@ class AIClassifierService:
         start_time = time.time()
 
         try:
-            rgb_img = image.convert("RGB")
-            w, h = rgb_img.size
+            # Ensure upright orientation and safe RGB conversion (compositing transparent alpha on white)
+            image_upright = ImageOps.exif_transpose(image) or image
+            rgb_img = safe_to_rgb(image_upright)
 
-            # Build dual-view representation:
-            # 1. Full image (for global composition)
-            # 2. Native-resolution center crop (to preserve original sensor grain if image is large)
+            # Preprocessing will be redone per backend in Step 4.
+            # Removed misleading native-resolution crop because HF processor resizes all views to 224px.
             images_to_process = [rgb_img]
-            if w >= 384 and h >= 384:
-                crop_size = min(w, h, 512)
-                left = (w - crop_size) // 2
-                top = (h - crop_size) // 2
-                center_crop = rgb_img.crop((left, top, left + crop_size, top + crop_size))
-                images_to_process.append(center_crop)
-
             inputs = self._processor(images=images_to_process, return_tensors="pt")
 
             with torch.no_grad():
