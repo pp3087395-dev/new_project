@@ -1,0 +1,442 @@
+[
+  {
+    "filename": "1.1.jpeg",
+    "ground_truth": "REAL",
+    "ground_truth_num": 0,
+    "fake_prob": 0.0,
+    "views": 3,
+    "latency_ms": 4932.0
+  },
+  {
+    "filename": "1.2.jpeg",
+    "ground_truth": "REAL",
+    "ground_truth_num": 0,
+    "fake_prob": 0.0,
+    "views": 3,
+    "latency_ms": 7699.0
+  },
+  {
+    "filename": "1.3.jpeg",
+    "ground_truth": "REAL",
+    "ground_truth_num": 0,
+    "fake_prob": 0.0,
+    "views": 3,
+    "latency_ms": 7676.0
+  },
+  {
+    "filename": "1.4.jpeg",
+    "ground_truth": "REAL",
+    "ground_truth_num": 0,
+    "fake_prob": 0.0,
+    "views": 3,
+    "latency_ms": 7702.0
+  },
+  {
+    "filename": "1.jpeg",
+    "ground_truth": "REAL",
+    "ground_truth_num": 0,
+    "fake_prob": 0.0,
+    "views": 3,
+    "latency_ms": 7698.0
+  },
+  {
+    "filename": "10.jpeg",
+    "ground_truth": "REAL",
+    "ground_truth_num": 0,
+    "fake_prob": 0.0,
+    "views": 3,
+    "latency_ms": 7593.0
+  },
+  {
+    "filename": "12.jpeg",
+    "ground_truth": "REAL",
+    "ground_truth_num": 0,
+    "fake_prob": 0.0,
+    "views": 3,
+    "latency_ms": 8183.0
+  },
+  {
+    "filename": "13.jpeg",
+    "ground_truth": "REAL",
+    "ground_truth_num": 0,
+    "fake_prob": 0.0,
+    "views": 3,
+    "latency_ms": 7926.0
+  },
+  {
+    "filename": "14.jpeg",
+    "ground_truth": "REAL",
+    "ground_truth_num": 0,
+    "fake_prob": 0.0,
+    "views": 3,
+    "latency_ms": 7762.0
+  },
+  {
+    "filename": "15.jpeg",
+    "ground_truth": "REAL",
+    "ground_truth_num": 0,
+    "fake_prob": 0.0,
+    "views": 3,
+    "latency_ms": 7623.0
+  },
+  {
+    "filename": "16.jpeg",
+    "ground_truth": "REAL",
+    "ground_truth_num": 0,
+    "fake_prob": 0.0,
+    "views": 3,
+    "latency_ms": 7599.0
+  },
+  {
+    "filename": "17.jpeg",
+    "ground_truth": "REAL",
+    "ground_truth_num": 0,
+    "fake_prob": 0.0,
+    "views": 3,
+    "latency_ms": 7339.0
+  },
+  {
+    "filename": "18.jpeg",
+    "ground_truth": "REAL",
+    "ground_truth_num": 0,
+    "fake_prob": 0.0,
+    "views": 3,
+    "latency_ms": 9131.0
+  },
+  {
+    "filename": "19.jpeg",
+    "ground_truth": "REAL",
+    "ground_truth_num": 0,
+    "fake_prob": 0.0,
+    "views": 3,
+    "latency_ms": 29343.0
+  },
+  {
+    "filename": "2.jpeg",
+    "ground_truth": "REAL",
+    "ground_truth_num": 0,
+    "fake_prob": 0.0,
+    "views": 3,
+    "latency_ms": 4768.0
+  },
+  {
+    "filename": "3.jpeg",
+    "ground_truth": "REAL",
+    "ground_truth_num": 0,
+    "fake_prob": 0.0,
+    "views": 3,
+    "latency_ms": 6746.0
+  },
+  {
+    "filename": "4.jpeg",
+    "ground_truth": "REAL",
+    "ground_truth_num": 0,
+    "fake_prob": 0.0,
+    "views": 3,
+    "latency_ms": 8017.0
+  },
+  {
+    "filename": "44.jpeg",
+    "ground_truth": "REAL",
+    "ground_truth_num": 0,
+    "fake_prob": 0.0,
+    "views": 3,
+    "latency_ms": 7755.0
+  },
+  {
+    "filename": "458.jpeg",
+    "ground_truth": "REAL",
+    "ground_truth_num": 0,
+    "fake_prob": 0.0,
+    "views": 3,
+    "latency_ms": 7574.0
+  },
+  {
+    "filename": "5.jpeg",
+    "ground_truth": "REAL",
+    "ground_truth_num": 0,
+    "fake_prob": 0.0,
+    "views": 3,
+    "latency_ms": 7619.0
+  },
+  {
+    "filename": "55.jpeg",
+    "ground_truth": "REAL",
+    "ground_truth_num": 0,
+    "fake_prob": 0.0,
+    "views": 3,
+    "latency_ms": 7576.0
+  },
+  {
+    "filename": "555.jpeg",
+    "ground_truth": "REAL",
+    "ground_truth_num": 0,
+    "fake_prob": 0.0,
+    "views": 3,
+    "latency_ms": 7546.0
+  },
+  {
+    "filename": "6.jpeg",
+    "ground_truth": "REAL",
+    "ground_truth_num": 0,
+    "fake_prob": 0.0,
+    "views": 3,
+    "latency_ms": 7547.0
+  },
+  {
+    "filename": "7.jpeg",
+    "ground_truth": "REAL",
+    "ground_truth_num": 0,
+    "fake_prob": 0.0,
+    "views": 3,
+    "latency_ms": 7462.0
+  },
+  {
+    "filename": "78.jpeg",
+    "ground_truth": "REAL",
+    "ground_truth_num": 0,
+    "fake_prob": 0.0,
+    "views": 3,
+    "latency_ms": 7249.0
+  },
+  {
+    "filename": "8.jpeg",
+    "ground_truth": "REAL",
+    "ground_truth_num": 0,
+    "fake_prob": 0.0,
+    "views": 3,
+    "latency_ms": 7081.0
+  },
+  {
+    "filename": "9.jpeg",
+    "ground_truth": "REAL",
+    "ground_truth_num": 0,
+    "fake_prob": 0.0,
+    "views": 3,
+    "latency_ms": 7373.0
+  },
+  {
+    "filename": "WhatsApp Image 2026-10-26 at 1.05.57 AM.jpeg",
+    "ground_truth": "REAL",
+    "ground_truth_num": 0,
+    "fake_prob": 0.0,
+    "views": 3,
+    "latency_ms": 7659.0
+  },
+  {
+    "filename": "1990s beautiful blonde Supergirl.webp",
+    "ground_truth": "FAKE",
+    "ground_truth_num": 1,
+    "fake_prob": 0.997,
+    "views": 3,
+    "latency_ms": 7650.0
+  },
+  {
+    "filename": "4-year-old boy.webp",
+    "ground_truth": "FAKE",
+    "ground_truth_num": 1,
+    "fake_prob": 0.9990000000000001,
+    "views": 3,
+    "latency_ms": 7745.0
+  },
+  {
+    "filename": "A beautiful woman with platinum blond hair that is.webp",
+    "ground_truth": "FAKE",
+    "ground_truth_num": 1,
+    "fake_prob": 0.975,
+    "views": 3,
+    "latency_ms": 7667.0
+  },
+  {
+    "filename": "A black man; cushite; tight nappy curls low level.webp",
+    "ground_truth": "FAKE",
+    "ground_truth_num": 1,
+    "fake_prob": 0.8290000000000001,
+    "views": 3,
+    "latency_ms": 7621.0
+  },
+  {
+    "filename": "a cat in a business suit sitting in a crowded subw.webp",
+    "ground_truth": "FAKE",
+    "ground_truth_num": 1,
+    "fake_prob": 0.68,
+    "views": 3,
+    "latency_ms": 7608.0
+  },
+  {
+    "filename": "A giraffe with a cigar in its mouth.webp",
+    "ground_truth": "FAKE",
+    "ground_truth_num": 1,
+    "fake_prob": 1.0,
+    "views": 3,
+    "latency_ms": 7709.0
+  },
+  {
+    "filename": "A girl with long straight hair in 80\u2019s anime vinta.webp",
+    "ground_truth": "FAKE",
+    "ground_truth_num": 1,
+    "fake_prob": 1.0,
+    "views": 3,
+    "latency_ms": 7568.0
+  },
+  {
+    "filename": "A pretty girl in san francisco.webp",
+    "ground_truth": "FAKE",
+    "ground_truth_num": 1,
+    "fake_prob": 1.0,
+    "views": 3,
+    "latency_ms": 7578.0
+  },
+  {
+    "filename": "A pretty girl in Tokyo.webp",
+    "ground_truth": "FAKE",
+    "ground_truth_num": 1,
+    "fake_prob": 1.0,
+    "views": 3,
+    "latency_ms": 7495.0
+  },
+  {
+    "filename": "a professional production photo of a Lara Croft le.webp",
+    "ground_truth": "FAKE",
+    "ground_truth_num": 1,
+    "fake_prob": 0.9640000000000001,
+    "views": 3,
+    "latency_ms": 7483.0
+  },
+  {
+    "filename": "a realistic version of calvin and hobbes.webp",
+    "ground_truth": "FAKE",
+    "ground_truth_num": 1,
+    "fake_prob": 1.0,
+    "views": 3,
+    "latency_ms": 7635.0
+  },
+  {
+    "filename": "a young woman photographed with soft lighting agai.webp",
+    "ground_truth": "FAKE",
+    "ground_truth_num": 1,
+    "fake_prob": 0.804,
+    "views": 3,
+    "latency_ms": 7720.0
+  },
+  {
+    "filename": "An extremely unremarkable iPhone photo with no cle.webp",
+    "ground_truth": "FAKE",
+    "ground_truth_num": 1,
+    "fake_prob": 0.9329999999999999,
+    "views": 3,
+    "latency_ms": 7596.0
+  },
+  {
+    "filename": "attractive woman in stockings.webp",
+    "ground_truth": "FAKE",
+    "ground_truth_num": 1,
+    "fake_prob": 1.0,
+    "views": 3,
+    "latency_ms": 7688.0
+  },
+  {
+    "filename": "barack obama hoopin.webp",
+    "ground_truth": "FAKE",
+    "ground_truth_num": 1,
+    "fake_prob": 0.523,
+    "views": 3,
+    "latency_ms": 7589.0
+  },
+  {
+    "filename": "cctv screenshot (so.webp",
+    "ground_truth": "FAKE",
+    "ground_truth_num": 1,
+    "fake_prob": 1.0,
+    "views": 3,
+    "latency_ms": 7802.0
+  },
+  {
+    "filename": "Create an image if a ginger tabby cat laying cozy.webp",
+    "ground_truth": "FAKE",
+    "ground_truth_num": 1,
+    "fake_prob": 1.0,
+    "views": 3,
+    "latency_ms": 7644.0
+  },
+  {
+    "filename": "grungy photo of Kirby shown during a tour of duty.webp",
+    "ground_truth": "FAKE",
+    "ground_truth_num": 1,
+    "fake_prob": 1.0,
+    "views": 3,
+    "latency_ms": 7557.0
+  },
+  {
+    "filename": "Japanese.webp",
+    "ground_truth": "FAKE",
+    "ground_truth_num": 1,
+    "fake_prob": 1.0,
+    "views": 3,
+    "latency_ms": 7610.0
+  },
+  {
+    "filename": "Link as a corporate bro.webp",
+    "ground_truth": "FAKE",
+    "ground_truth_num": 1,
+    "fake_prob": 1.0,
+    "views": 3,
+    "latency_ms": 7655.0
+  },
+  {
+    "filename": "movie scene.webp",
+    "ground_truth": "FAKE",
+    "ground_truth_num": 1,
+    "fake_prob": 0.085,
+    "views": 3,
+    "latency_ms": 7695.0
+  },
+  {
+    "filename": "photo realistic albert einstein at a gym pumping i.webp",
+    "ground_truth": "FAKE",
+    "ground_truth_num": 1,
+    "fake_prob": 1.0,
+    "views": 3,
+    "latency_ms": 7602.0
+  },
+  {
+    "filename": "portrait of a sensual japanese stewardess on PAN A.webp",
+    "ground_truth": "FAKE",
+    "ground_truth_num": 1,
+    "fake_prob": 0.9309999999999999,
+    "views": 3,
+    "latency_ms": 7793.0
+  },
+  {
+    "filename": "silver KITH jacket.webp",
+    "ground_truth": "FAKE",
+    "ground_truth_num": 1,
+    "fake_prob": 1.0,
+    "views": 3,
+    "latency_ms": 7482.0
+  },
+  {
+    "filename": "the stock trading floor is filled with water.webp",
+    "ground_truth": "FAKE",
+    "ground_truth_num": 1,
+    "fake_prob": 0.9990000000000001,
+    "views": 3,
+    "latency_ms": 7953.0
+  },
+  {
+    "filename": "Venom Snake from Metal Gear Solid 5 receiving ther.webp",
+    "ground_truth": "FAKE",
+    "ground_truth_num": 1,
+    "fake_prob": 0.992,
+    "views": 3,
+    "latency_ms": 7918.0
+  },
+  {
+    "filename": "very pretty caucasian girl at age 18(with subtle a.webp",
+    "ground_truth": "FAKE",
+    "ground_truth_num": 1,
+    "fake_prob": 0.948,
+    "views": 3,
+    "latency_ms": 7686.0
+  }
+]

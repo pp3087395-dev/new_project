@@ -76,9 +76,11 @@ export interface AIClassificationResult {
   modelName: string;
   modelVersion: string;
   status: 'success' | 'unavailable' | 'error';
-  predictedClass?: 'REAL' | 'FAKE' | string | null;
+  predictedClass?: 'REAL' | 'FAKE' | 'INCONCLUSIVE' | string | null;
   predictedLabelDescription?: string | null;
   confidenceScore?: number | null;
+  decisionThreshold?: number | null;
+  uncertainBand?: number | null;
   scores?: { REAL: number; FAKE: number } | Record<string, number> | null;
   rawLogits?: { REAL: number; FAKE: number } | Record<string, number> | null;
   calibrationStatement: string;

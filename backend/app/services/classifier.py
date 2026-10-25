@@ -231,8 +231,15 @@ class AIClassifierService:
         "and real photography. Extreme compression or novel adversarial synthesis may introduce uncertainty."
     )
 
+    DEFAULT_THRESHOLDS = {
+        "smaug": 0.50,
+        "siglip": 0.40,
+        "legacy": 0.50,
+    }
+    DEFAULT_UNCERTAIN_BAND = 0.10
+
     def __init__(self):
-        self._backend_key = os.environ.get("CLASSIFIER_BACKEND", "siglip").lower().strip()
+        self._backend_key = os.environ.get("CLASSIFIER_BACKEND", "smaug").lower().strip()
         self._hf_token = os.environ.get("HF_TOKEN") or os.environ.get("HUGGING_FACE_HUB_TOKEN")
         self._backend: Optional[BaseClassifierBackend] = None
         self._is_initialized: bool = False
@@ -241,6 +248,28 @@ class AIClassifierService:
         self._lock = threading.Lock()
 
         self._select_backend(self._backend_key)
+
+    @property
+    def threshold(self) -> float:
+        """Configured fake decision threshold cutoff (default 0.50 for smaug, 0.40 for siglip)."""
+        env_val = os.environ.get("CLASSIFIER_FAKE_THRESHOLD")
+        if env_val is not None:
+            try:
+                return float(env_val)
+            except ValueError:
+                pass
+        return self.DEFAULT_THRESHOLDS.get(self._backend_key, 0.50)
+
+    @property
+    def uncertain_band(self) -> float:
+        """Configured uncertainty half-width around threshold for INCONCLUSIVE verdict (default 0.10)."""
+        env_val = os.environ.get("CLASSIFIER_UNCERTAIN_BAND")
+        if env_val is not None:
+            try:
+                return float(env_val)
+            except ValueError:
+                pass
+        return self.DEFAULT_UNCERTAIN_BAND
 
     def _select_backend(self, key: str):
         if key == "smaug":
@@ -330,8 +359,11 @@ class AIClassifierService:
     def predict(self, image: Image.Image) -> Dict[str, Any]:
         """
         Full forensic inspection returning calibrated dict with predicted_class,
-        confidence, scores, latency, and views evaluated.
+        confidence, scores, latency, views evaluated, threshold, and uncertain_band.
         """
+        threshold = self.threshold
+        uncertain_band = self.uncertain_band
+
         if not self._is_initialized:
             self.initialize()
 
@@ -344,6 +376,8 @@ class AIClassifierService:
                 "predicted_class": None,
                 "predicted_label_description": None,
                 "confidence_score": None,
+                "decision_threshold": threshold,
+                "uncertain_band": uncertain_band,
                 "scores": None,
                 "raw_logits": None,
                 "views_evaluated": None,
@@ -361,12 +395,21 @@ class AIClassifierService:
             real_prob = max(0.0, min(1.0, 1.0 - fake_prob))
             fake_prob = max(0.0, min(1.0, fake_prob))
 
-            predicted_class = "FAKE" if fake_prob >= 0.5 else "REAL"
-            predicted_desc = (
-                "AI-Generated Media (Synthetic)"
-                if predicted_class == "FAKE"
-                else "Authentic Photograph / Real-World Media"
-            )
+            # Calibrated 3-way decision logic with uncertain band
+            if uncertain_band > 0.0 and abs(fake_prob - threshold) <= uncertain_band:
+                predicted_class = "INCONCLUSIVE"
+                predicted_desc = (
+                    f"Inconclusive / Borderline Model Signal "
+                    f"(Fake Probability {fake_prob*100:.1f}% falls within uncertainty band "
+                    f"[{max(0.0, threshold - uncertain_band)*100:.1f}%, {min(1.0, threshold + uncertain_band)*100:.1f}%])"
+                )
+            elif fake_prob > threshold + uncertain_band:
+                predicted_class = "FAKE"
+                predicted_desc = "AI-Generated Media (Synthetic)"
+            else:
+                predicted_class = "REAL"
+                predicted_desc = "Authentic Photograph / Real-World Media"
+
             confidence_score = round(max(fake_prob, real_prob) * 100.0, 2)
 
             return {
@@ -377,6 +420,8 @@ class AIClassifierService:
                 "predicted_class": predicted_class,
                 "predicted_label_description": predicted_desc,
                 "confidence_score": confidence_score,
+                "decision_threshold": threshold,
+                "uncertain_band": uncertain_band,
                 "scores": {
                     "REAL": round(real_prob, 4),
                     "FAKE": round(fake_prob, 4),

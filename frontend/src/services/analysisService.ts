@@ -131,6 +131,8 @@ export const analysisService = {
         predictedClass: rawAi.predicted_class,
         predictedLabelDescription: rawAi.predicted_label_description,
         confidenceScore: rawAi.confidence_score,
+        decisionThreshold: rawAi.decision_threshold,
+        uncertainBand: rawAi.uncertain_band,
         scores: rawAi.scores,
         rawLogits: rawAi.raw_logits,
         calibrationStatement: rawAi.calibration_statement,
@@ -148,9 +150,11 @@ export const analysisService = {
           resultCategory = 'potentially_manipulated';
         } else if (aiClassification.predictedClass === 'REAL') {
           resultCategory = 'no_strong_signs';
+        } else if (aiClassification.predictedClass === 'INCONCLUSIVE') {
+          resultCategory = 'inconclusive';
         }
         confidenceScore = aiClassification.confidenceScore ?? null;
-        confidenceRationale = `Vision Transformer Classification: Predicted ${aiClassification.predictedClass} with ${confidenceScore}% model activation. Note: scores represent softmax relative output strength and are not calibrated Bayesian probabilities.`;
+        confidenceRationale = `AI Classification: Predicted ${aiClassification.predictedClass} with ${confidenceScore}% model activation. ${aiClassification.predictedLabelDescription || ''}`;
       } else if (aiClassification && aiClassification.status === 'unavailable') {
         resultCategory = 'forensic_signal_analysis';
         confidenceScore = null;
@@ -172,14 +176,16 @@ export const analysisService = {
       if (aiClassification && aiClassification.status === 'success') {
         const fakePct = aiClassification.scores?.FAKE ? (aiClassification.scores.FAKE * 100).toFixed(1) : '0';
         const realPct = aiClassification.scores?.REAL ? (aiClassification.scores.REAL * 100).toFixed(1) : '0';
+        const isFake = aiClassification.predictedClass === 'FAKE';
+        const isInconclusive = aiClassification.predictedClass === 'INCONCLUSIVE';
         evidence.push({
           id: 'ev-ai-classifier',
-          title: `Pretrained ViT Classification: ${aiClassification.predictedClass === 'FAKE' ? 'Synthetic / AI-Generated' : 'Authentic / Real-World'}`,
+          title: `Classifier Verdict: ${isFake ? 'Synthetic / AI-Generated' : (isInconclusive ? 'Inconclusive / Borderline' : 'Authentic / Real-World')}`,
           category: 'spatial_artifacts',
-          severity: aiClassification.predictedClass === 'FAKE' ? 'high' : 'clean',
+          severity: isFake ? 'high' : (isInconclusive ? 'medium' : 'clean'),
           score: Math.round(confidenceScore || 50),
           summary: `Model: ${aiClassification.modelName}. Class activation: Fake ${fakePct}% vs Real ${realPct}%.`,
-          details: `Vision Transformer (ViT-Base, fine-tuned on CIFAKE). Softmax output logits: Fake=${aiClassification.rawLogits?.FAKE}, Real=${aiClassification.rawLogits?.REAL}. ${aiClassification.calibrationStatement} ${aiClassification.scopeLimitation}`,
+          details: `${aiClassification.predictedLabelDescription || ''} ${aiClassification.calibrationStatement} ${aiClassification.scopeLimitation}`,
           visualCue: `Inference completed in ${aiClassification.inferenceTimeMs}ms on CPU.`,
           isDemonstrationOnly: false
         });

@@ -338,7 +338,7 @@ class MediaDetectorService:
                 f"Prediction: {ai_classification.predicted_class} (Scores: Real={ai_classification.scores['REAL']}, Fake={ai_classification.scores['FAKE']}). "
                 f"Inference: {ai_classification.inference_time_ms}ms on CPU."
             )
-            stage_label = "Image Forensics & Pretrained ViT AI Classifier"
+            stage_label = f"Image Forensics & {classifier_service.MODEL_NAME}"
         elif ai_classification.status == "unavailable":
             model_status = (
                 f"AI model unavailable: {ai_classification.error_message}. "
