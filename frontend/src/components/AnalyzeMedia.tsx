@@ -9,7 +9,9 @@ import {
   Play, 
   Sparkles, 
   ShieldCheck, 
-  ArrowRight
+  ArrowRight,
+  Loader2,
+  RefreshCw
 } from 'lucide-react';
 import { analysisService, SAMPLE_DATASETS } from '../services/analysisService';
 import type { AnalysisResult, SampleMedia } from '../types';
@@ -20,6 +22,8 @@ interface AnalyzeMediaProps {
 }
 
 const MAX_IMAGE_SIZE_MB = 15;
+
+type BackendStatus = 'checking' | 'waking_up' | 'model_loading' | 'online' | 'offline';
 
 export const AnalyzeMedia: FC<AnalyzeMediaProps> = ({ 
   onAnalysisComplete,
@@ -37,14 +41,100 @@ export const AnalyzeMedia: FC<AnalyzeMediaProps> = ({
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [backendOnline, setBackendOnline] = useState<boolean | null>(null);
+  // Step 7 Backend Polling State
+  const [backendStatus, setBackendStatus] = useState<BackendStatus>('checking');
+  const [modelName, setModelName] = useState<string>('Smaug AI Image Detector');
+  const [pollSecondsElapsed, setPollSecondsElapsed] = useState<number>(0);
+  const [pollAttempt, setPollAttempt] = useState<number>(0);
 
-  // Probe backend health on mount
+  const runHealthCheck = useRef<() => void>(() => {});
+  const backendUrl = analysisService.getBackendUrl();
+
+  // Polling loop: probe /api/ping (60s timeout, 5s retry), then /api/health for model readiness
   useEffect(() => {
-    analysisService.checkBackendHealth().then((status) => {
-      setBackendOnline(status.isOnline);
-    });
-  }, []);
+    let isCancelled = false;
+    let timerId: any = null;
+    let secondsInterval: any = null;
+    const startTime = Date.now();
+    const MAX_WAIT_MS = 60000; // 60s max wait for cold start
+    const PING_INTERVAL_MS = 5000; // 5s retry
+    const HEALTH_INTERVAL_MS = 3000; // 3s while model loading
+
+    secondsInterval = setInterval(() => {
+      if (!isCancelled) {
+        setPollSecondsElapsed(Math.round((Date.now() - startTime) / 1000));
+      }
+    }, 1000);
+
+    const poll = async () => {
+      if (isCancelled) return;
+
+      // 1. Probe /api/ping
+      const pingOk = await analysisService.ping(4000);
+      if (isCancelled) return;
+
+      if (!pingOk) {
+        if (Date.now() - startTime >= MAX_WAIT_MS) {
+          setBackendStatus('offline');
+          clearInterval(secondsInterval);
+          return;
+        }
+        setBackendStatus('waking_up');
+        timerId = setTimeout(poll, PING_INTERVAL_MS);
+        return;
+      }
+
+      // 2. Ping succeeded, check /api/health
+      const health = await analysisService.checkBackendHealth(4000);
+      if (isCancelled) return;
+
+      if (!health.isOnline) {
+        if (Date.now() - startTime >= MAX_WAIT_MS) {
+          setBackendStatus('offline');
+          clearInterval(secondsInterval);
+          return;
+        }
+        setBackendStatus('waking_up');
+        timerId = setTimeout(poll, PING_INTERVAL_MS);
+        return;
+      }
+
+      if (health.modelName) {
+        setModelName(health.modelName);
+      }
+
+      if (health.modelStatus === 'loading') {
+        setBackendStatus('model_loading');
+        // Continue checking health until model is ready
+        timerId = setTimeout(poll, HEALTH_INTERVAL_MS);
+      } else if (health.modelStatus === 'ready') {
+        setBackendStatus('online');
+        clearInterval(secondsInterval);
+      } else if (health.modelStatus === 'error') {
+        setBackendStatus('offline');
+        clearInterval(secondsInterval);
+      } else {
+        setBackendStatus('online');
+        clearInterval(secondsInterval);
+      }
+    };
+
+    runHealthCheck.current = () => {
+      if (timerId) clearTimeout(timerId);
+      if (secondsInterval) clearInterval(secondsInterval);
+      setPollSecondsElapsed(0);
+      setBackendStatus('checking');
+      setPollAttempt(prev => prev + 1);
+    };
+
+    poll();
+
+    return () => {
+      isCancelled = true;
+      if (timerId) clearTimeout(timerId);
+      if (secondsInterval) clearInterval(secondsInterval);
+    };
+  }, [pollAttempt]);
 
   // Check if a preselected sample was passed from Hero/Demo
   useEffect(() => {
@@ -92,7 +182,7 @@ export const AnalyzeMedia: FC<AnalyzeMediaProps> = ({
 
     setSelectedFile(file);
     setFileType('image');
-    setPreviewUrl(URL.createObjectURL(file));
+    analysisService.createDownscaledThumbnail(file, 480).then(setPreviewUrl);
   };
 
   const handleDrop = (e: DragEvent) => {
@@ -182,35 +272,68 @@ export const AnalyzeMedia: FC<AnalyzeMediaProps> = ({
         </p>
       </div>
 
-      {/* Backend Connectivity Status Banner */}
-      <div className={`mb-6 p-4 rounded-xl border flex items-center justify-between gap-3 text-xs ${
-        backendOnline === true
+      {/* Backend Connectivity Status Banner (Step 7: Waking up, Model Loading, Online, Offline) */}
+      <div className={`mb-6 p-4 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs transition-all ${
+        backendStatus === 'online'
           ? 'bg-emerald-950/30 border-emerald-500/40 text-emerald-300'
-          : backendOnline === false
+          : backendStatus === 'model_loading'
+          ? 'bg-sky-950/30 border-sky-500/40 text-sky-300'
+          : backendStatus === 'waking_up' || backendStatus === 'checking'
           ? 'bg-amber-950/30 border-amber-500/40 text-amber-300'
-          : 'bg-slate-900 border-slate-800 text-slate-400'
+          : 'bg-rose-950/30 border-rose-500/40 text-rose-300'
       }`}>
-        <div className="flex items-center gap-2.5">
-          <span className={`w-2.5 h-2.5 rounded-full ${
-            backendOnline === true ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'
-          }`}></span>
-          <span>
-            {backendOnline === true ? (
+        <div className="flex items-center gap-3">
+          {backendStatus === 'online' && (
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shrink-0"></span>
+          )}
+          {backendStatus === 'model_loading' && (
+            <Loader2 className="w-4 h-4 text-sky-400 animate-spin shrink-0" />
+          )}
+          {(backendStatus === 'waking_up' || backendStatus === 'checking') && (
+            <Loader2 className="w-4 h-4 text-amber-400 animate-spin shrink-0" />
+          )}
+          {backendStatus === 'offline' && (
+            <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
+          )}
+
+          <div>
+            {backendStatus === 'online' && (
               <span>
-                <strong>FastAPI Forensics Engine Online:</strong> Uploaded images will be processed with genuine 2D-FFT and EXIF extraction.
+                <strong>System Online & Ready:</strong> Connected to FastAPI backend with <span className="font-semibold">{modelName}</span> and 2D-FFT forensics.
               </span>
-            ) : backendOnline === false ? (
-              <span>
-                <strong>FastAPI Backend Offline:</strong> Start the backend using <code className="bg-black/40 px-1 py-0.5 rounded font-mono">python app/main.py</code> for real signal processing.
-              </span>
-            ) : (
-              <span>Checking backend connection status...</span>
             )}
+            {backendStatus === 'model_loading' && (
+              <span>
+                <strong>Server Online, Model Loading:</strong> FastAPI server is active; AI classification model weights are initializing on CPU ({pollSecondsElapsed}s elapsed)...
+              </span>
+            )}
+            {(backendStatus === 'waking_up' || backendStatus === 'checking') && (
+              <span>
+                <strong>Waking up server...</strong> Cold start on Render free tier takes 30–50s ({pollSecondsElapsed}s / 60s max, retrying every 5s).
+              </span>
+            )}
+            {backendStatus === 'offline' && (
+              <span>
+                <strong>FastAPI Backend Offline:</strong> Unable to connect to <code className="bg-black/40 px-1 py-0.5 rounded font-mono">{backendUrl}</code> after 60s. Start locally via <code className="bg-black/40 px-1 py-0.5 rounded font-mono">python app/main.py</code> or verify your cloud deployment.
+              </span>
+            )}
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2.5 self-end sm:self-auto shrink-0">
+          {backendStatus === 'offline' && (
+            <button
+              onClick={() => runHealthCheck.current()}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-rose-900/40 hover:bg-rose-900/70 border border-rose-500/50 text-rose-200 transition-colors text-xs font-medium cursor-pointer"
+            >
+              <RefreshCw className="w-3 h-3" />
+              <span>Retry Connection</span>
+            </button>
+          )}
+          <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400">
+            API: {backendUrl.replace(/^https?:\/\//, '')}
           </span>
         </div>
-        <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400 shrink-0">
-          VITE_API_BASE_URL: 8000
-        </span>
       </div>
 
       {/* Error Alert */}

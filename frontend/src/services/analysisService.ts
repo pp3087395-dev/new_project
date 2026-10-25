@@ -42,20 +42,58 @@ export const SAMPLE_DATASETS: SampleMedia[] = [
 
 export const analysisService = {
   getBackendUrl(): string {
-    return import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000';
+    const envUrl = import.meta.env.VITE_API_BASE_URL;
+    if (envUrl && typeof envUrl === 'string' && envUrl.trim().length > 0) {
+      return envUrl.replace(/\/+$/, '');
+    }
+    return 'http://127.0.0.1:8000';
   },
 
-  async checkBackendHealth(): Promise<{ isOnline: boolean; details?: any }> {
+  /**
+   * Fast lightweight ping probe.
+   * Resolves immediately to check if the server is awake without waiting for model weights.
+   */
+  async ping(timeoutMs = 4000): Promise<boolean> {
+    try {
+      const url = `${this.getBackendUrl()}/api/ping`;
+      const res = await fetch(url, { signal: AbortSignal.timeout(timeoutMs) });
+      if (res.ok) {
+        const data = await res.json().catch(() => ({}));
+        return !!data.ok;
+      }
+      return false;
+    } catch {
+      return false;
+    }
+  },
+
+  /**
+   * Comprehensive health check.
+   * Reports server status, model loading progress ('loading' | 'ready' | 'error'), and active model name.
+   */
+  async checkBackendHealth(timeoutMs = 4000): Promise<{
+    isOnline: boolean;
+    modelStatus: 'ready' | 'loading' | 'error' | 'unavailable' | 'unknown';
+    modelName?: string;
+    details?: any;
+    error?: string;
+  }> {
     try {
       const url = `${this.getBackendUrl()}/api/health`;
-      const res = await fetch(url, { signal: AbortSignal.timeout(3000) });
+      const res = await fetch(url, { signal: AbortSignal.timeout(timeoutMs) });
       if (res.ok) {
         const data = await res.json();
-        return { isOnline: true, details: data };
+        return {
+          isOnline: true,
+          modelStatus: data.ai_model_status || (data.ai_model_connected ? 'ready' : 'unavailable'),
+          modelName: data.ai_model_name,
+          details: data,
+          error: data.ai_model_error || undefined,
+        };
       }
-      return { isOnline: false };
-    } catch {
-      return { isOnline: false };
+      return { isOnline: false, modelStatus: 'unknown' };
+    } catch (e: any) {
+      return { isOnline: false, modelStatus: 'unknown', error: e.message };
     }
   },
 
