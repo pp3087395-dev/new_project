@@ -14,7 +14,7 @@ logger = logging.getLogger("truthlens")
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Eagerly initialize and load the model on startup so requests do not block or re-download
-    logger.info("Initializing CapCheck ViT ONNX Classifier Service on startup...")
+    logger.info("Initializing ViT AI Classifier Service on startup...")
     success = classifier_service.initialize()
     if success:
         logger.info("AI Classifier model is ready for CPU inference.")

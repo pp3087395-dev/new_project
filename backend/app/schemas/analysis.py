@@ -28,9 +28,9 @@ class FrequencyAnalysisSchema(BaseModel):
     disclaimer: str
 
 class AIClassificationSchema(BaseModel):
-    model_id: str = "onnx-community/ai-image-detection-ONNX"
-    model_name: str = "CapCheck ViT AI-Generated Image Detector (ONNX Quantized)"
-    model_version: str = "1.0.0"
+    model_id: str = "umm-maybe/AI-image-detector"
+    model_name: str = "ViT AI Image Detector (umm-maybe / Multi-Generator)"
+    model_version: str = "2.0.0"
     status: str = Field(..., description="'success', 'unavailable', or 'error'")
     predicted_class: Optional[str] = Field(None, description="'REAL' or 'FAKE'")
     predicted_label_description: Optional[str] = Field(None, description="Human-readable description of predicted class")
