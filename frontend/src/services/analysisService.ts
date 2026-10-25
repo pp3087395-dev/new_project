@@ -220,6 +220,17 @@ export const analysisService = {
         errorMessage: rawAi.error_message
       } : undefined;
 
+      const rawProv = backendData.provenance;
+      const provenance = rawProv ? {
+        aiSourceDeclared: Boolean(rawProv.ai_source_declared),
+        declaredSourceType: rawProv.declared_source_type || null,
+        toolStrings: rawProv.tool_strings || [],
+        c2paPresent: Boolean(rawProv.c2pa_present),
+        c2paVerified: rawProv.c2pa_verified,
+        watermarkMatch: rawProv.watermark_match || null,
+        notes: rawProv.notes || []
+      } : undefined;
+
       let resultCategory: ResultCategory = 'forensic_signal_analysis';
       let confidenceScore: number | null = null;
       let confidenceRationale = '';
@@ -233,7 +244,10 @@ export const analysisService = {
           resultCategory = 'inconclusive';
         }
         confidenceScore = aiClassification.confidenceScore ?? null;
-        confidenceRationale = `AI Classification: Predicted ${aiClassification.predictedClass} with ${confidenceScore}% model activation. ${aiClassification.predictedLabelDescription || ''}`;
+        const displayClass = aiClassification.predictedClass === 'FAKE'
+          ? 'Likely fully AI-generated'
+          : (aiClassification.predictedClass === 'REAL' ? 'No signs of full AI generation' : 'Inconclusive');
+        confidenceRationale = `AI Classification: ${displayClass} (${confidenceScore}% model activation). ${aiClassification.predictedLabelDescription || ''}`;
       } else if (aiClassification && aiClassification.status === 'unavailable') {
         resultCategory = 'forensic_signal_analysis';
         confidenceScore = null;
@@ -259,7 +273,7 @@ export const analysisService = {
         const isInconclusive = aiClassification.predictedClass === 'INCONCLUSIVE';
         evidence.push({
           id: 'ev-ai-classifier',
-          title: `Classifier Verdict: ${isFake ? 'Synthetic / AI-Generated' : (isInconclusive ? 'Inconclusive / Borderline' : 'Authentic / Real-World')}`,
+          title: `Classifier Verdict: ${isFake ? 'Likely fully AI-generated' : (isInconclusive ? 'Inconclusive' : 'No signs of full AI generation')}`,
           category: 'spatial_artifacts',
           severity: isFake ? 'high' : (isInconclusive ? 'medium' : 'clean'),
           score: Math.round(confidenceScore || 50),
@@ -278,6 +292,30 @@ export const analysisService = {
           summary: aiClassification.errorMessage || 'Model weights not loaded or inference failed.',
           details: 'TruthLens operates honestly in deterministic signal-processing mode when the neural classifier is unavailable. No mock or fabricated predictions are returned.',
           visualCue: 'Review server logs or network status.',
+          isDemonstrationOnly: false
+        });
+      }
+
+      // 1b. Provenance Clues Evidence Item
+      if (provenance) {
+        evidence.push({
+          id: 'ev-provenance-clues',
+          title: provenance.aiSourceDeclared 
+            ? 'Provenance Clues: AI Source / Editing Declared in Metadata' 
+            : 'Provenance Clues: Metadata & Container Inspection',
+          category: 'metadata_compression',
+          severity: provenance.aiSourceDeclared ? 'medium' : 'info',
+          score: provenance.aiSourceDeclared ? 75 : 20,
+          summary: provenance.aiSourceDeclared
+            ? `Metadata declared: ${provenance.declaredSourceType || provenance.toolStrings.join(', ') || 'AI editing marker'}.`
+            : (provenance.toolStrings.length > 0 
+                ? `Tool markers: ${provenance.toolStrings.join(', ')}.` 
+                : (provenance.notes.length > 0 ? provenance.notes[0] : 'No provenance clues found.')),
+          details: [
+            ...provenance.notes,
+            'Provenance clues are auxiliary metadata indicators and never alter the neural classifier verdict.'
+          ].join(' • '),
+          visualCue: provenance.c2paPresent ? 'C2PA manifest marker present in media container.' : 'EXIF / XMP / IPTC metadata inspection.',
           isDemonstrationOnly: false
         });
       }
@@ -379,6 +417,7 @@ export const analysisService = {
           disclaimer: backendData.frequency_analysis.disclaimer
         },
         aiClassification,
+        provenance,
         limitations: backendData.limitations,
         nextSteps: backendData.recommendations,
         modelInfo: {

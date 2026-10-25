@@ -45,6 +45,15 @@ class AIClassificationSchema(BaseModel):
     inference_time_ms: Optional[float] = None
     error_message: Optional[str] = None
 
+class ProvenanceSchema(BaseModel):
+    ai_source_declared: bool = Field(False, description="True if metadata explicitly declares AI generation or AI tool")
+    declared_source_type: Optional[str] = Field(None, description="IPTC DigitalSourceType if declared (e.g. trainedAlgorithmicMedia)")
+    tool_strings: List[str] = Field(default_factory=list, description="Editing or generation tool names discovered in EXIF/XMP")
+    c2pa_present: bool = Field(False, description="True if C2PA JUMBF metadata manifest is present")
+    c2pa_verified: Optional[bool] = Field(None, description="True if C2PA cryptographic signature was verified; None if unverified")
+    watermark_match: Optional[str] = Field(None, description="Matched visual watermark signature, or null")
+    notes: List[str] = Field(default_factory=list, description="Explanatory notes and caveats regarding provenance clues")
+
 class ForensicAnalysisResponse(BaseModel):
     status: str = "success"
     mode: str = "genuine_signal_processing"
@@ -58,6 +67,7 @@ class ForensicAnalysisResponse(BaseModel):
     metadata_analysis: ImageMetadataSchema
     frequency_analysis: FrequencyAnalysisSchema
     ai_classification: Optional[AIClassificationSchema] = None
+    provenance: Optional[ProvenanceSchema] = None
     model_status: str
     limitations: List[str]
     recommendations: List[str]

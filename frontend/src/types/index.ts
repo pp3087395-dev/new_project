@@ -89,6 +89,16 @@ export interface AIClassificationResult {
   errorMessage?: string | null;
 }
 
+export interface ProvenanceResult {
+  aiSourceDeclared: boolean;
+  declaredSourceType?: string | null;
+  toolStrings: string[];
+  c2paPresent: boolean;
+  c2paVerified?: boolean | null;
+  watermarkMatch?: string | null;
+  notes: string[];
+}
+
 export interface AnalysisResult {
   id: string;
   fileName: string;
@@ -108,6 +118,7 @@ export interface AnalysisResult {
   metadataAnalysis?: ImageMetadataAnalysis;
   frequencyAnalysis?: FrequencyAnalysis;
   aiClassification?: AIClassificationResult;
+  provenance?: ProvenanceResult;
   videoFrames?: VideoFrameSample[];
   limitations: string[];
   nextSteps: string[];
@@ -124,6 +135,9 @@ export interface AnalysisHistoryEntry {
   confidenceScore: number | null;
   summary: string;
   mode: 'genuine_signal_processing' | 'demo_simulation';
+  aiSourceDeclared?: boolean;
+  declaredSourceType?: string | null;
+  toolStrings?: string[];
 }
 
 export interface SampleMedia {

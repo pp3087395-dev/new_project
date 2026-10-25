@@ -13,8 +13,10 @@ from app.schemas.analysis import (
     FrequencyAnalysisSchema,
     SpectralEnergySchema,
     AIClassificationSchema,
+    ProvenanceSchema,
 )
 from app.services.classifier import classifier_service
+from app.services.provenance import inspect_provenance
 
 class MediaDetectorService:
     """
@@ -331,6 +333,9 @@ class MediaDetectorService:
         ai_pred = classifier_service.predict(rgb_img)
         ai_classification = AIClassificationSchema(**ai_pred)
 
+        # 6. Inspect metadata provenance, IPTC DigitalSourceType, tool signatures, and C2PA markers
+        provenance = inspect_provenance(file_bytes, image)
+
         # Contextualize status and limitations honestly
         if ai_classification.status == "success":
             model_status = (
@@ -353,6 +358,7 @@ class MediaDetectorService:
             stage_label = "Image Forensics — AI Inference Error"
 
         limitations = [
+            "This tool estimates whether an image is fully AI-generated. It cannot tell whether a real photo was edited, retouched, upscaled or AI-enhanced. Absence of detection is not proof the image is untouched.",
             "AI model classification is statistical and trained across modern generative diffusion outputs and real photography; it does not provide definitive judicial or mathematical proof.",
             "This model is specialized for detecting AI-generated synthetic images and has not been established as a universal face-swap detector.",
             "Scores are raw softmax outputs from Vision Transformer logits and represent model activation strength rather than calibrated Bayesian probabilities.",
@@ -365,7 +371,7 @@ class MediaDetectorService:
             "Evaluate the Vision Transformer prediction alongside the 2D-FFT frequency spectrum and EXIF provenance data for multi-spectral corroboration.",
             "Examine the 2D-FFT magnitude spectrum for abnormal periodic starburst or cross-hatch spikes characteristic of GAN transposed convolutions.",
             "Inspect the EXIF table for software provenance tags (e.g., Photoshop, Midjourney) or missing camera hardware parameters.",
-            "Do not label an image definitively authentic or inauthentic based on automated AI model scores alone.",
+            "Do not treat absence of AI generation detection as proof that an image is untouched or authentic.",
             "Cross-reference the image with reverse-image search engines (Google Lens, TinEye) to trace publication history."
         ]
 
@@ -386,6 +392,7 @@ class MediaDetectorService:
             metadata_analysis=metadata_analysis,
             frequency_analysis=frequency_analysis,
             ai_classification=ai_classification,
+            provenance=provenance,
             model_status=model_status,
             limitations=limitations,
             recommendations=recommendations,

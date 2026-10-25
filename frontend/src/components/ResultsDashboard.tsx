@@ -11,7 +11,8 @@ import {
   Sparkles, 
   Download,
   Info,
-  Cpu
+  Cpu,
+  ShieldCheck
 } from 'lucide-react';
 import type { AnalysisResult, EvidenceItem } from '../types';
 
@@ -39,7 +40,7 @@ export const ResultsDashboard: FC<ResultsDashboardProps> = ({
       const pred = result.aiClassification.predictedClass;
       if (pred === 'FAKE') {
         return {
-          label: 'AI-GENERATED MEDIA PATTERNS DETECTED',
+          label: 'LIKELY FULLY AI-GENERATED',
           badgeText: activeModelName,
           icon: AlertTriangle,
           textColor: 'text-red-300',
@@ -53,7 +54,7 @@ export const ResultsDashboard: FC<ResultsDashboardProps> = ({
           ? (result.aiClassification.scores.FAKE * 100).toFixed(1)
           : (result.confidenceScore != null ? result.confidenceScore.toFixed(1) : '50.0');
         return {
-          label: 'INCONCLUSIVE / BORDERLINE SIGNAL DETECTED',
+          label: 'INCONCLUSIVE',
           badgeText: `INCONCLUSIVE (AI probability: ${fakeProb}%)`,
           icon: HelpCircle,
           textColor: 'text-amber-300',
@@ -63,7 +64,7 @@ export const ResultsDashboard: FC<ResultsDashboardProps> = ({
         };
       }
       return {
-        label: 'NO STRONG AI-GENERATION SIGNS DETECTED',
+        label: 'NO SIGNS OF FULL AI GENERATION',
         badgeText: activeModelName,
         icon: CheckCircle2,
         textColor: 'text-emerald-300',
@@ -87,7 +88,7 @@ export const ResultsDashboard: FC<ResultsDashboardProps> = ({
 
     if (result.resultCategory === 'potentially_manipulated') {
       return {
-        label: 'AI-GENERATED MEDIA PATTERNS DETECTED',
+        label: 'LIKELY FULLY AI-GENERATED',
         badgeText: activeModelName,
         icon: AlertTriangle,
         textColor: 'text-red-300',
@@ -99,7 +100,7 @@ export const ResultsDashboard: FC<ResultsDashboardProps> = ({
 
     if (result.resultCategory === 'no_strong_signs') {
       return {
-        label: 'NO STRONG AI-GENERATION SIGNS DETECTED',
+        label: 'NO SIGNS OF FULL AI GENERATION',
         badgeText: activeModelName,
         icon: CheckCircle2,
         textColor: 'text-emerald-300',
@@ -114,7 +115,7 @@ export const ResultsDashboard: FC<ResultsDashboardProps> = ({
         ? (result.aiClassification.scores.FAKE * 100).toFixed(1)
         : (result.confidenceScore != null ? result.confidenceScore.toFixed(1) : '50.0');
       return {
-        label: 'INCONCLUSIVE / BORDERLINE SIGNAL DETECTED',
+        label: 'INCONCLUSIVE',
         badgeText: `INCONCLUSIVE (AI probability: ${fakeProb}%)`,
         icon: HelpCircle,
         textColor: 'text-amber-300',
@@ -169,6 +170,25 @@ export const ResultsDashboard: FC<ResultsDashboardProps> = ({
         </div>
       </div>
 
+      {/* AI Provenance Clue Alert Banner */}
+      {result.provenance?.aiSourceDeclared && (
+        <div className="p-4 rounded-xl bg-amber-950/40 border border-amber-500/50 text-amber-200 text-xs sm:text-sm flex items-start gap-3 shadow-lg shadow-amber-950/30">
+          <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+          <div className="space-y-1">
+            <div className="font-bold font-mono uppercase text-amber-300 text-xs tracking-wider">
+              AI Metadata Provenance Marker Detected
+            </div>
+            <p className="leading-relaxed">
+              This file's metadata says it was created or edited with AI (
+              <strong className="text-white">
+                {result.provenance.declaredSourceType || result.provenance.toolStrings.join(', ') || 'Metadata Marker'}
+              </strong>
+              ). The classifier verdict below only measures full AI generation.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Main Verdict Card */}
       <div className={`p-6 sm:p-8 rounded-2xl ${status.bgColor} border ${status.borderColor} relative overflow-hidden shadow-2xl ${status.glowColor}`}>
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
@@ -197,7 +217,7 @@ export const ResultsDashboard: FC<ResultsDashboardProps> = ({
               {result.aiClassification && result.aiClassification.status === 'success' ? (
                 result.aiClassification.predictedClass === 'INCONCLUSIVE' ? (
                   <span>
-                    The model cannot reliably distinguish this image from authentic photography. Additional manual verification is required. Evaluated by <strong>{result.aiClassification.modelName}</strong> ({result.aiClassification.modelId}) on CPU alongside 2D-FFT frequency analysis.
+                    The model cannot reliably distinguish this image from non-AI photography. Additional manual verification is required. Evaluated by <strong>{result.aiClassification.modelName}</strong> ({result.aiClassification.modelId}) on CPU alongside 2D-FFT frequency analysis.
                   </span>
                 ) : (
                   <span>
@@ -219,7 +239,7 @@ export const ResultsDashboard: FC<ResultsDashboardProps> = ({
             </div>
             {result.aiClassification && result.aiClassification.status === 'success' ? (
               <div>
-                <div className="text-2xl font-extrabold font-heading tracking-tight flex items-center justify-center gap-1.5">
+                <div className="text-xl sm:text-2xl font-extrabold font-heading tracking-tight flex items-center justify-center gap-1.5">
                   <span className={
                     result.aiClassification.predictedClass === 'FAKE'
                       ? 'text-red-400'
@@ -227,14 +247,18 @@ export const ResultsDashboard: FC<ResultsDashboardProps> = ({
                       ? 'text-amber-400'
                       : 'text-emerald-400'
                   }>
-                    {result.aiClassification.predictedClass}
+                    {result.aiClassification.predictedClass === 'FAKE'
+                      ? 'Likely fully AI-generated'
+                      : result.aiClassification.predictedClass === 'REAL'
+                      ? 'No signs of full AI generation'
+                      : 'Inconclusive'}
                   </span>
-                  <span className="text-lg text-slate-300 font-mono">
+                  <span className="text-base text-slate-300 font-mono">
                     ({result.aiClassification.confidenceScore?.toFixed(1)}%)
                   </span>
                 </div>
-                <div className="text-[10px] text-slate-400 mt-1 max-w-[190px] mx-auto leading-tight font-mono">
-                  Fake: {(result.aiClassification.scores?.FAKE ? result.aiClassification.scores.FAKE * 100 : 0).toFixed(1)}% | Real: {(result.aiClassification.scores?.REAL ? result.aiClassification.scores.REAL * 100 : 0).toFixed(1)}%
+                <div className="text-[10px] text-slate-400 mt-1 max-w-[210px] mx-auto leading-tight font-mono">
+                  AI: {(result.aiClassification.scores?.FAKE ? result.aiClassification.scores.FAKE * 100 : 0).toFixed(1)}% | Non-AI: {(result.aiClassification.scores?.REAL ? result.aiClassification.scores.REAL * 100 : 0).toFixed(1)}%
                 </div>
               </div>
             ) : (result.confidenceScore != null) ? (
@@ -257,6 +281,14 @@ export const ResultsDashboard: FC<ResultsDashboardProps> = ({
               </div>
             )}
           </div>
+        </div>
+
+        {/* Fixed Scope Notice */}
+        <div className="mt-5 pt-3 border-t border-slate-800/80 text-[11px] text-slate-400 flex items-start gap-2">
+          <Info className="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
+          <p className="leading-relaxed">
+            This tool estimates whether an image is fully AI-generated. It cannot tell whether a real photo was edited, retouched, upscaled or AI-enhanced. Absence of detection is not proof the image is untouched.
+          </p>
         </div>
       </div>
 
@@ -299,19 +331,21 @@ export const ResultsDashboard: FC<ResultsDashboardProps> = ({
                 <div className="md:col-span-5 space-y-2">
                   <div className="text-xs text-slate-400 font-mono">Predicted Classification:</div>
                   <div className="flex items-center gap-3">
-                    <span className={`text-2xl font-extrabold font-mono px-3 py-1 rounded-xl border ${
+                    <span className={`text-xl sm:text-2xl font-extrabold font-mono px-3 py-1 rounded-xl border ${
                       result.aiClassification.predictedClass === 'FAKE'
                         ? 'text-red-300 bg-red-950/60 border-red-500/40'
                         : result.aiClassification.predictedClass === 'INCONCLUSIVE'
                         ? 'text-amber-300 bg-amber-950/60 border-amber-500/40'
                         : 'text-emerald-300 bg-emerald-950/60 border-emerald-500/40'
                     }`}>
-                      {result.aiClassification.predictedClass}
+                      {result.aiClassification.predictedClass === 'FAKE'
+                        ? 'Likely fully AI-generated'
+                        : result.aiClassification.predictedClass === 'REAL'
+                        ? 'No signs of full AI generation'
+                        : 'Inconclusive'}
                     </span>
                     <span className="text-xs text-slate-300 font-medium">
-                      {result.aiClassification.predictedClass === 'INCONCLUSIVE'
-                        ? 'The model cannot reliably distinguish this image from authentic photography. Additional manual verification is required.'
-                        : (result.aiClassification.predictedLabelDescription || '')}
+                      {result.aiClassification.predictedLabelDescription || ''}
                     </span>
                   </div>
                   {result.aiClassification.inferenceTimeMs !== null && (
@@ -324,10 +358,10 @@ export const ResultsDashboard: FC<ResultsDashboardProps> = ({
                 <div className="md:col-span-7 space-y-3 bg-black/40 p-4 rounded-xl border border-slate-800">
                   <div className="flex justify-between items-center text-xs font-mono">
                     <span className="text-red-400 font-semibold">
-                      FAKE (AI-Generated): {result.aiClassification.scores?.FAKE !== undefined ? (result.aiClassification.scores.FAKE * 100).toFixed(2) : 0}%
+                      Likely AI-Generated: {result.aiClassification.scores?.FAKE !== undefined ? (result.aiClassification.scores.FAKE * 100).toFixed(2) : 0}%
                     </span>
                     <span className="text-emerald-400 font-semibold">
-                      REAL (Authentic): {result.aiClassification.scores?.REAL !== undefined ? (result.aiClassification.scores.REAL * 100).toFixed(2) : 0}%
+                      No signs of AI: {result.aiClassification.scores?.REAL !== undefined ? (result.aiClassification.scores.REAL * 100).toFixed(2) : 0}%
                     </span>
                   </div>
 
@@ -380,12 +414,20 @@ export const ResultsDashboard: FC<ResultsDashboardProps> = ({
                 <div className="p-3.5 rounded-xl bg-slate-950/80 border border-slate-800 text-xs space-y-1.5">
                   <div className="font-semibold text-cyan-300 font-mono text-[11px] flex items-center gap-1.5">
                     <ShieldAlert className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
-                    <span>Scope & Face-Swap Limitation</span>
+                    <span>Full AI vs Editing Scope</span>
                   </div>
                   <p className="text-[11px] text-slate-400 leading-relaxed">
-                    {result.aiClassification.scopeLimitation} Do not treat this automated score alone as definitive proof of authenticity.
+                    {result.aiClassification.scopeLimitation}
                   </p>
                 </div>
+              </div>
+
+              {/* Fixed Scope Notice */}
+              <div className="p-3 rounded-xl bg-black/40 border border-slate-800/80 text-[11px] text-slate-400 flex items-start gap-2">
+                <Info className="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
+                <p className="leading-relaxed">
+                  This tool estimates whether an image is fully AI-generated. It cannot tell whether a real photo was edited, retouched, upscaled or AI-enhanced. Absence of detection is not proof the image is untouched.
+                </p>
               </div>
             </div>
           ) : (
@@ -410,6 +452,79 @@ export const ResultsDashboard: FC<ResultsDashboardProps> = ({
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Provenance Clues Panel */}
+      {result.provenance && (
+        <div className="glass-card rounded-2xl border border-slate-800 bg-slate-900/70 p-6 shadow-xl space-y-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between pb-3 border-b border-slate-800 gap-3">
+            <div className="flex items-center gap-2.5">
+              <div className={`p-2 rounded-xl border ${
+                result.provenance.aiSourceDeclared
+                  ? 'bg-amber-500/10 border-amber-500/30 text-amber-400'
+                  : 'bg-cyan-500/10 border-cyan-500/30 text-cyan-400'
+              }`}>
+                <ShieldCheck className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="text-xs font-mono font-bold uppercase tracking-wider text-slate-400">
+                  Provenance Clues & Content Credentials
+                </div>
+                <h3 className="text-base sm:text-lg font-bold text-white font-heading">
+                  Metadata & Container Verification
+                </h3>
+              </div>
+            </div>
+
+            <span className={`text-[11px] font-mono px-2.5 py-1 rounded font-semibold uppercase ${
+              result.provenance.aiSourceDeclared
+                ? 'bg-amber-950/70 text-amber-300 border border-amber-500/40'
+                : 'bg-slate-800 text-slate-300 border border-slate-700'
+            }`}>
+              {result.provenance.aiSourceDeclared ? 'AI Source Declared' : 'No AI Source Declared'}
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs font-mono">
+            <div className="p-3 rounded-xl bg-black/40 border border-slate-800/80 space-y-1">
+              <span className="text-slate-500 text-[10px] uppercase block">IPTC Source Type</span>
+              <span className={`font-semibold block ${result.provenance.declaredSourceType ? 'text-amber-300' : 'text-slate-300'}`}>
+                {result.provenance.declaredSourceType || 'None declared'}
+              </span>
+            </div>
+
+            <div className="p-3 rounded-xl bg-black/40 border border-slate-800/80 space-y-1">
+              <span className="text-slate-500 text-[10px] uppercase block">Tool Markers</span>
+              <span className="font-semibold text-slate-200 block truncate" title={result.provenance.toolStrings.join(', ')}>
+                {result.provenance.toolStrings.length > 0 ? result.provenance.toolStrings.join(', ') : 'None detected'}
+              </span>
+            </div>
+
+            <div className="p-3 rounded-xl bg-black/40 border border-slate-800/80 space-y-1">
+              <span className="text-slate-500 text-[10px] uppercase block">Content Credentials (C2PA)</span>
+              <span className={`font-semibold block ${result.provenance.c2paPresent ? 'text-cyan-300' : 'text-slate-400'}`}>
+                {result.provenance.c2paPresent 
+                  ? (result.provenance.c2paVerified ? 'C2PA Manifest Verified' : 'C2PA Marker Present (Unverified)') 
+                  : 'No C2PA manifest found'}
+              </span>
+            </div>
+          </div>
+
+          {result.provenance.notes.length > 0 && (
+            <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800/60 space-y-1 text-xs">
+              <span className="text-slate-400 font-mono text-[11px] block font-semibold">Provenance Observations:</span>
+              <ul className="list-disc list-inside space-y-1 text-slate-300 text-[11px]">
+                {result.provenance.notes.map((note, idx) => (
+                  <li key={idx}>{note}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          <div className="text-[10px] text-slate-500 font-mono pt-1">
+            * Note: Provenance clues inspect container tags only. They do not alter the classifier score and cannot detect edits from raw pixels.
+          </div>
         </div>
       )}
 

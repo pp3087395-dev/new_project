@@ -227,8 +227,9 @@ class AIClassifierService:
         "These represent relative model activations and are not calibrated Bayesian or frequentist probabilities."
     )
     SCOPE_LIMITATION = (
-        "This model evaluates structural, texture, and latent artifact patterns across synthetic "
-        "and real photography. Extreme compression or novel adversarial synthesis may introduce uncertainty."
+        "This tool estimates whether an image is fully AI-generated. "
+        "It cannot tell whether a real photo was edited, retouched, upscaled or AI-enhanced. "
+        "Absence of detection is not proof the image is untouched."
     )
 
     DEFAULT_THRESHOLDS = {
@@ -398,17 +399,13 @@ class AIClassifierService:
             # Calibrated 3-way decision logic with uncertain band
             if uncertain_band > 0.0 and abs(fake_prob - threshold) <= uncertain_band:
                 predicted_class = "INCONCLUSIVE"
-                predicted_desc = (
-                    f"Inconclusive / Borderline Model Signal "
-                    f"(Fake Probability {fake_prob*100:.1f}% falls within uncertainty band "
-                    f"[{max(0.0, threshold - uncertain_band)*100:.1f}%, {min(1.0, threshold + uncertain_band)*100:.1f}%])"
-                )
+                predicted_desc = "Inconclusive"
             elif fake_prob > threshold + uncertain_band:
                 predicted_class = "FAKE"
-                predicted_desc = "AI-Generated Media (Synthetic)"
+                predicted_desc = "Likely fully AI-generated"
             else:
                 predicted_class = "REAL"
-                predicted_desc = "Authentic Photograph / Real-World Media"
+                predicted_desc = "No signs of full AI generation"
 
             confidence_score = round(max(fake_prob, real_prob) * 100.0, 2)
 

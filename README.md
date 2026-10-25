@@ -134,9 +134,11 @@ truthlens/
 | **Memory Footprint** | ~150–200 MB RAM |
 
 ### Important Scientific & Ethical Limitations
+* **Full AI Generation vs AI Enhancement:** This tool estimates whether an image is fully AI-generated. It cannot tell whether a real photo was edited, retouched, upscaled or AI-enhanced. Absence of detection is not proof the image is untouched.
+* **Honest Probabilistic Labels:** Verdicts are explicitly labeled as "Likely fully AI-generated", "No signs of full AI generation", or "Inconclusive". We never claim an image is definitively "Authentic" or "Real" based on automated scores.
 * **Uncalibrated Activations:** Scores are raw softmax outputs from the Vision Transformer and represent relative model activation on training distributions, not calibrated statistical probabilities.
 * **Specialized Domain:** The model detects AI-generated synthetic images (diffusion, GANs) and has **not** been established as a universal facial manipulation or face-swap detector.
-* **Separation of Evidence:** Mathematical 2D-FFT frequency spectrum analysis and EXIF metadata extraction remain strictly separated from the model prediction. 2D-FFT visualizations are never represented as standalone proof of manipulation.
+* **Separation of Evidence:** Mathematical 2D-FFT frequency spectrum analysis, EXIF metadata extraction, and provenance clues (IPTC DigitalSourceType, C2PA) remain strictly separated from the model prediction. Provenance clues never alter the classifier verdict.
 * **Honest Failure Handling:** If model weights cannot be loaded or inference fails, the system returns an honest `unavailable` status with error details; it never fabricates mock confidence scores.
 
 ---

@@ -9,7 +9,8 @@ import {
   HelpCircle, 
   Search, 
   ArrowRight,
-  Activity
+  Activity,
+  Info
 } from 'lucide-react';
 import { historyService } from '../services/historyService';
 import type { AnalysisHistoryEntry, AnalysisResult } from '../types';
@@ -74,13 +75,13 @@ export const HistoryDashboard: FC<HistoryDashboardProps> = ({
         };
       case 'potentially_manipulated':
         return {
-          label: 'Manipulated',
+          label: 'Likely fully AI-generated',
           icon: AlertTriangle,
           class: 'bg-red-950/80 text-red-300 border border-red-500/40'
         };
       case 'no_strong_signs':
         return {
-          label: 'No Strong Signs',
+          label: 'No signs of full AI generation',
           icon: CheckCircle2,
           class: 'bg-emerald-950/80 text-emerald-300 border border-emerald-500/40'
         };
@@ -139,8 +140,8 @@ export const HistoryDashboard: FC<HistoryDashboardProps> = ({
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
           {[
             { id: 'all', label: 'All Scans' },
-            { id: 'potentially_manipulated', label: 'Manipulated' },
-            { id: 'no_strong_signs', label: 'No Strong Signs' },
+            { id: 'potentially_manipulated', label: 'Likely AI-generated' },
+            { id: 'no_strong_signs', label: 'No AI signs' },
             { id: 'inconclusive', label: 'Inconclusive' }
           ].map((tab) => (
             <button
@@ -201,6 +202,11 @@ export const HistoryDashboard: FC<HistoryDashboardProps> = ({
                       <BadgeIcon className="w-3 h-3" />
                       {badge.label}
                     </span>
+                    {item.aiSourceDeclared && (
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-950/80 text-amber-300 border border-amber-500/40">
+                        AI Metadata Declared
+                      </span>
+                    )}
                   </div>
 
                   <p className="text-xs text-slate-400 truncate max-w-lg">
@@ -242,6 +248,14 @@ export const HistoryDashboard: FC<HistoryDashboardProps> = ({
           })}
         </div>
       )}
+
+      {/* Fixed Scope Notice */}
+      <div className="mt-8 p-3.5 rounded-xl bg-slate-900/60 border border-slate-800 text-[11px] text-slate-400 flex items-start gap-2.5">
+        <Info className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
+        <p className="leading-relaxed">
+          This tool estimates whether an image is fully AI-generated. It cannot tell whether a real photo was edited, retouched, upscaled or AI-enhanced. Absence of detection is not proof the image is untouched.
+        </p>
+      </div>
 
     </div>
   );
