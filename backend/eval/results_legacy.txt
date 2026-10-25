@@ -1,0 +1,72 @@
+===========================================================================
+                 TRUTHLENS FORENSIC MODEL EVALUATION REPORT
+===========================================================================
+Model Backend     : legacy (ViT AI Image Detector (umm-maybe / Multi-Generator))
+Dataset Size      : 55 images (28 Real, 27 Fake)
+Average Latency   : 354.2 ms / image on CPU
+Default Cutoff    : 0.50
+---------------------------------------------------------------------------
+1. PERFORMANCE SUMMARY (Threshold = 0.50)
+   Accuracy               : 49.09% (27/55)
+   False Positive Rate    : 42.86% (12/28 real photos called fake)
+   False Negative Rate    : 59.26% (16/27 AI images missed as real)
+
+2. CONFUSION MATRIX
+                          Predicted REAL      Predicted FAKE
+   Actual REAL (Authentic):   TN =   16           FP =   12
+   Actual FAKE (Synthetic):   FN =   16           TP =   11
+---------------------------------------------------------------------------
+3. MISCLASSIFIED FILES (28 total):
+   - [REAL -> Pred FAKE] 1.2.jpeg                            (FakeProb:  59.6%)
+   - [REAL -> Pred FAKE] 1.3.jpeg                            (FakeProb:  78.4%)
+   - [REAL -> Pred FAKE] 1.4.jpeg                            (FakeProb:  92.3%)
+   - [REAL -> Pred FAKE] 4.jpeg                              (FakeProb:  64.9%)
+   - [REAL -> Pred FAKE] 458.jpeg                            (FakeProb:  73.9%)
+   - [REAL -> Pred FAKE] 5.jpeg                              (FakeProb:  94.4%)
+   - [REAL -> Pred FAKE] 55.jpeg                             (FakeProb:  74.1%)
+   - [REAL -> Pred FAKE] 6.jpeg                              (FakeProb:  56.2%)
+   - [REAL -> Pred FAKE] 7.jpeg                              (FakeProb:  85.0%)
+   - [REAL -> Pred FAKE] 8.jpeg                              (FakeProb:  50.5%)
+   - [REAL -> Pred FAKE] 9.jpeg                              (FakeProb:  55.7%)
+   - [REAL -> Pred FAKE] WhatsApp Image 2026-10-26 at 1.05.57 AM.jpeg (FakeProb:  60.7%)
+   - [FAKE -> Pred REAL] 1990s beautiful blonde Supergirl.webp (FakeProb:  28.0%)
+   - [FAKE -> Pred REAL] 4-year-old boy.webp                 (FakeProb:  13.7%)
+   - [FAKE -> Pred REAL] A black man; cushite; tight nappy curls low level.webp (FakeProb:  28.1%)
+   - [FAKE -> Pred REAL] a cat in a business suit sitting in a crowded subw.webp (FakeProb:  11.8%)
+   - [FAKE -> Pred REAL] A girl with long straight hair in 80’s anime vinta.webp (FakeProb:   7.3%)
+   - [FAKE -> Pred REAL] A pretty girl in Tokyo.webp         (FakeProb:   6.1%)
+   - [FAKE -> Pred REAL] a professional production photo of a Lara Croft le.webp (FakeProb:   3.0%)
+   - [FAKE -> Pred REAL] a young woman photographed with soft lighting agai.webp (FakeProb:   3.5%)
+   - [FAKE -> Pred REAL] An extremely unremarkable iPhone photo with no cle.webp (FakeProb:  35.5%)
+   - [FAKE -> Pred REAL] attractive woman in stockings.webp  (FakeProb:  11.0%)
+   - [FAKE -> Pred REAL] barack obama hoopin.webp            (FakeProb:  31.5%)
+   - [FAKE -> Pred REAL] Create an image if a ginger tabby cat laying cozy.webp (FakeProb:  22.4%)
+   - [FAKE -> Pred REAL] Japanese.webp                       (FakeProb:  21.0%)
+   - [FAKE -> Pred REAL] photo realistic albert einstein at a gym pumping i.webp (FakeProb:  32.9%)
+   - [FAKE -> Pred REAL] the stock trading floor is filled with water.webp (FakeProb:  24.9%)
+   - [FAKE -> Pred REAL] very pretty caucasian girl at age 18(with subtle a.webp (FakeProb:   4.1%)
+---------------------------------------------------------------------------
+4. OPTIMAL THRESHOLD SWEEP (0.05 to 0.95)
+   Threshold | Accuracy | FPR (Real->Fake) | FNR (Fake->Real)
+      0.05   |   43.6%  |      100.0%      |       11.1%
+      0.10   |   45.5%  |       89.3%      |       18.5%
+      0.15   |   47.3%  |       75.0%      |       29.6%
+      0.20   |   47.3%  |       75.0%      |       29.6%
+      0.25   |   43.6%  |       71.4%      |       40.7%
+      0.30   |   40.0%  |       71.4%      |       48.1%
+      0.35   |   38.2%  |       67.9%      |       55.6%
+      0.40   |   40.0%  |       60.7%      |       59.3%
+      0.45   |   43.6%  |       53.6%      |       59.3%
+      0.50   |   49.1%  |       42.9%      |       59.3%
+      0.55   |   47.3%  |       39.3%      |       66.7%
+      0.60   |   49.1%  |       28.6%      |       74.1%
+      0.65   |   50.9%  |       21.4%      |       77.8%
+      0.70   |   49.1%  |       21.4%      |       81.5%
+      0.75   |   50.9%  |       14.3%      |       85.2%
+      0.80   |   45.5%  |       10.7%      |      100.0%
+      0.85   |   45.5%  |       10.7%      |      100.0%
+      0.90   |   47.3%  |        7.1%      |      100.0%
+      0.95   |   50.9%  |        0.0%      |      100.0% <-- OPTIMAL
+---------------------------------------------------------------------------
+   RECOMMENDED OPTIMAL THRESHOLD: 0.95 (Accuracy: 50.9%, FPR: 0.0%)
+===========================================================================
