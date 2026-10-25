@@ -214,7 +214,7 @@ export const ReportModal: FC<ReportModalProps> = ({ result, onClose }) => {
                 </div>
               </div>
 
-              {result.confidenceScore !== null ? (
+              {result.confidenceScore != null ? (
                 <div className="sm:text-right">
                   <span className="text-[10px] font-mono text-slate-500 block uppercase tracking-wider">
                     Calculated Confidence

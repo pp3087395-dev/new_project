@@ -216,7 +216,7 @@ export const ResultsDashboard: FC<ResultsDashboardProps> = ({
                   Fake: {(result.aiClassification.scores?.FAKE ? result.aiClassification.scores.FAKE * 100 : 0).toFixed(1)}% | Real: {(result.aiClassification.scores?.REAL ? result.aiClassification.scores.REAL * 100 : 0).toFixed(1)}%
                 </div>
               </div>
-            ) : result.confidenceScore !== null ? (
+            ) : (result.confidenceScore != null) ? (
               <div>
                 <div className="text-3xl font-extrabold text-white font-heading tracking-tight">
                   {result.confidenceScore.toFixed(1)}%
@@ -558,7 +558,7 @@ export const ResultsDashboard: FC<ResultsDashboardProps> = ({
                 <div className="p-2.5 rounded-lg bg-slate-950/60 border border-slate-800">
                   <span className="text-slate-500 block text-[10px] font-mono uppercase">Aspect Ratio</span>
                   <span className="font-bold text-white font-mono">
-                    {result.metadataAnalysis.dimensions.aspectRatio}
+                    {result.metadataAnalysis.dimensions.aspectRatio || (result.metadataAnalysis.dimensions as any).aspect_ratio || 'N/A'}
                   </span>
                 </div>
                 <div className="p-2.5 rounded-lg bg-slate-950/60 border border-slate-800">
@@ -570,7 +570,7 @@ export const ResultsDashboard: FC<ResultsDashboardProps> = ({
                 <div className="p-2.5 rounded-lg bg-slate-950/60 border border-slate-800">
                   <span className="text-slate-500 block text-[10px] font-mono uppercase">Total Pixels</span>
                   <span className="font-bold text-white font-mono">
-                    {result.metadataAnalysis.dimensions.totalPixels.toLocaleString()}
+                    {(result.metadataAnalysis.dimensions.totalPixels ?? (result.metadataAnalysis.dimensions as any).total_pixels ?? (result.metadataAnalysis.dimensions.width * result.metadataAnalysis.dimensions.height))?.toLocaleString() ?? 'N/A'}
                   </span>
                 </div>
               </div>
@@ -578,12 +578,12 @@ export const ResultsDashboard: FC<ResultsDashboardProps> = ({
               {/* EXIF Fields Table */}
               <div className="pt-2">
                 <div className="text-xs font-mono font-semibold text-slate-300 mb-2 uppercase tracking-wider">
-                  Available EXIF Fields ({Object.keys(result.metadataAnalysis.exifData).length})
+                  Available EXIF Fields ({Object.keys(result.metadataAnalysis.exifData || {}).length})
                 </div>
 
-                {Object.keys(result.metadataAnalysis.exifData).length > 0 ? (
+                {Object.keys(result.metadataAnalysis.exifData || {}).length > 0 ? (
                   <div className="border border-slate-800 rounded-lg overflow-hidden divide-y divide-slate-800 text-xs">
-                    {Object.entries(result.metadataAnalysis.exifData).map(([key, val]) => (
+                    {Object.entries(result.metadataAnalysis.exifData || {}).map(([key, val]) => (
                       <div key={key} className="p-2 bg-slate-950/40 flex items-center justify-between font-mono">
                         <span className="text-slate-400">{key}:</span>
                         <span className="text-white truncate max-w-[180px]">{String(val)}</span>
@@ -598,13 +598,13 @@ export const ResultsDashboard: FC<ResultsDashboardProps> = ({
               </div>
 
               {/* Missing Metadata Notice */}
-              {result.metadataAnalysis.missingMetadata.length > 0 && (
+              {(result.metadataAnalysis.missingMetadata || []).length > 0 && (
                 <div className="p-3 rounded-lg bg-amber-950/20 border border-amber-500/30 text-xs text-amber-300/90 space-y-1.5">
                   <div className="font-semibold text-amber-300 font-mono text-[11px]">
                     Missing Provenance Indicators:
                   </div>
                   <ul className="list-disc pl-4 space-y-1 text-[11px] text-slate-300">
-                    {result.metadataAnalysis.missingMetadata.map((missing, idx) => (
+                    {(result.metadataAnalysis.missingMetadata || []).map((missing, idx) => (
                       <li key={idx}>{missing}</li>
                     ))}
                   </ul>
