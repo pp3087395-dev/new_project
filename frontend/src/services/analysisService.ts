@@ -164,7 +164,7 @@ export const analysisService = {
       if (onProgress) onProgress(20, 'Reading file bytes and computing client-side integrity check...');
       await new Promise(r => setTimeout(r, 200));
 
-      if (onProgress) onProgress(45, 'Sending image to TruthLens FastAPI backend via multipart/form-data...');
+      if (onProgress) onProgress(45, 'Sending image to TruthLens backend (first analysis after a cold start can take longer)...');
 
       const formData = new FormData();
       formData.append('file', file);
@@ -174,10 +174,14 @@ export const analysisService = {
         response = await fetch(`${backendUrl}/api/analyze/image`, {
           method: 'POST',
           body: formData,
+          signal: AbortSignal.timeout(120000), // 120-second timeout for CPU inference & cold starts
         });
       } catch (networkErr: any) {
+        if (networkErr.name === 'TimeoutError') {
+          throw new Error('Analysis timed out after 120 seconds. The server may be experiencing high CPU load or a cold start.');
+        }
         throw new Error(
-          `Unable to connect to TruthLens backend at ${backendUrl}. Please ensure FastAPI is running via 'python app/main.py'.`
+          `Unable to connect to TruthLens backend at ${backendUrl}. Please ensure the server is running and reachable.`
         );
       }
 

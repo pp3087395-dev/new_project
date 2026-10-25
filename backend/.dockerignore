@@ -1,0 +1,24 @@
+# Version control and environments
+.git/
+.gitignore
+venv/
+.venv/
+test_venv/
+
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+
+# Local data, evaluation files, tests, and caches
+eval/
+tests/
+cache/
+.env
+.env.*
+*.log
+results_*.txt
+crops_speed_experiment.json

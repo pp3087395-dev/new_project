@@ -450,8 +450,11 @@ export const AnalyzeMedia: FC<AnalyzeMediaProps> = ({
                 <div className="text-cyan-300 font-mono font-bold text-sm tracking-wider mb-1">
                   ANALYSIS IN PROGRESS ({progressPct}%)
                 </div>
-                <div className="text-slate-300 text-xs text-center max-w-sm mb-4">
+                <div className="text-slate-300 text-xs text-center max-w-sm mb-2">
                   {progressStage}
+                </div>
+                <div className="text-slate-400 text-[11px] text-center max-w-sm mb-4 italic">
+                  Note: The first analysis after a cold start can take longer.
                 </div>
                 
                 {/* Progress Bar */}

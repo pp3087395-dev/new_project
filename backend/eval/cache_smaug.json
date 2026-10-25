@@ -1,442 +1,497 @@
 [
   {
+    "path": "C:\\Users\\Lenovo\\OneDrive\\Desktop\\V coding\\Ai_Deepfake\\new_project\\backend\\eval\\real\\1.1.jpeg",
     "filename": "1.1.jpeg",
     "ground_truth": "REAL",
     "ground_truth_num": 0,
-    "fake_prob": 0.0,
-    "views": 3,
-    "latency_ms": 4932.0
+    "fake_prob": 0.0001781593164196238,
+    "views": 1,
+    "latency_ms": 1675.3387451171875
   },
   {
+    "path": "C:\\Users\\Lenovo\\OneDrive\\Desktop\\V coding\\Ai_Deepfake\\new_project\\backend\\eval\\real\\1.2.jpeg",
     "filename": "1.2.jpeg",
     "ground_truth": "REAL",
     "ground_truth_num": 0,
-    "fake_prob": 0.0,
-    "views": 3,
-    "latency_ms": 7699.0
+    "fake_prob": 0.0001441537169739604,
+    "views": 1,
+    "latency_ms": 1691.260814666748
   },
   {
+    "path": "C:\\Users\\Lenovo\\OneDrive\\Desktop\\V coding\\Ai_Deepfake\\new_project\\backend\\eval\\real\\1.3.jpeg",
     "filename": "1.3.jpeg",
     "ground_truth": "REAL",
     "ground_truth_num": 0,
-    "fake_prob": 0.0,
-    "views": 3,
-    "latency_ms": 7676.0
+    "fake_prob": 0.0002536120009608567,
+    "views": 1,
+    "latency_ms": 1618.429183959961
   },
   {
+    "path": "C:\\Users\\Lenovo\\OneDrive\\Desktop\\V coding\\Ai_Deepfake\\new_project\\backend\\eval\\real\\1.4.jpeg",
     "filename": "1.4.jpeg",
     "ground_truth": "REAL",
     "ground_truth_num": 0,
-    "fake_prob": 0.0,
-    "views": 3,
-    "latency_ms": 7702.0
+    "fake_prob": 0.0003178928454872221,
+    "views": 1,
+    "latency_ms": 1683.2177639007568
   },
   {
+    "path": "C:\\Users\\Lenovo\\OneDrive\\Desktop\\V coding\\Ai_Deepfake\\new_project\\backend\\eval\\real\\1.jpeg",
     "filename": "1.jpeg",
     "ground_truth": "REAL",
     "ground_truth_num": 0,
-    "fake_prob": 0.0,
-    "views": 3,
-    "latency_ms": 7698.0
+    "fake_prob": 0.00030542665626853704,
+    "views": 1,
+    "latency_ms": 1657.240390777588
   },
   {
+    "path": "C:\\Users\\Lenovo\\OneDrive\\Desktop\\V coding\\Ai_Deepfake\\new_project\\backend\\eval\\real\\10.jpeg",
     "filename": "10.jpeg",
     "ground_truth": "REAL",
     "ground_truth_num": 0,
-    "fake_prob": 0.0,
-    "views": 3,
-    "latency_ms": 7593.0
+    "fake_prob": 0.00014338491018861532,
+    "views": 1,
+    "latency_ms": 1621.8342781066895
   },
   {
+    "path": "C:\\Users\\Lenovo\\OneDrive\\Desktop\\V coding\\Ai_Deepfake\\new_project\\backend\\eval\\real\\12.jpeg",
     "filename": "12.jpeg",
     "ground_truth": "REAL",
     "ground_truth_num": 0,
-    "fake_prob": 0.0,
-    "views": 3,
-    "latency_ms": 8183.0
+    "fake_prob": 0.0001851383422035724,
+    "views": 1,
+    "latency_ms": 2621.556520462036
   },
   {
+    "path": "C:\\Users\\Lenovo\\OneDrive\\Desktop\\V coding\\Ai_Deepfake\\new_project\\backend\\eval\\real\\13.jpeg",
     "filename": "13.jpeg",
     "ground_truth": "REAL",
     "ground_truth_num": 0,
-    "fake_prob": 0.0,
-    "views": 3,
-    "latency_ms": 7926.0
+    "fake_prob": 0.0001851383422035724,
+    "views": 1,
+    "latency_ms": 2707.5858116149902
   },
   {
+    "path": "C:\\Users\\Lenovo\\OneDrive\\Desktop\\V coding\\Ai_Deepfake\\new_project\\backend\\eval\\real\\14.jpeg",
     "filename": "14.jpeg",
     "ground_truth": "REAL",
     "ground_truth_num": 0,
-    "fake_prob": 0.0,
-    "views": 3,
-    "latency_ms": 7762.0
+    "fake_prob": 0.00011329140397720039,
+    "views": 1,
+    "latency_ms": 3076.667547225952
   },
   {
+    "path": "C:\\Users\\Lenovo\\OneDrive\\Desktop\\V coding\\Ai_Deepfake\\new_project\\backend\\eval\\real\\15.jpeg",
     "filename": "15.jpeg",
     "ground_truth": "REAL",
     "ground_truth_num": 0,
-    "fake_prob": 0.0,
-    "views": 3,
-    "latency_ms": 7623.0
+    "fake_prob": 8.113466174108908e-05,
+    "views": 1,
+    "latency_ms": 2650.951862335205
   },
   {
+    "path": "C:\\Users\\Lenovo\\OneDrive\\Desktop\\V coding\\Ai_Deepfake\\new_project\\backend\\eval\\real\\16.jpeg",
     "filename": "16.jpeg",
     "ground_truth": "REAL",
     "ground_truth_num": 0,
-    "fake_prob": 0.0,
-    "views": 3,
-    "latency_ms": 7599.0
+    "fake_prob": 8.113466174108908e-05,
+    "views": 1,
+    "latency_ms": 2681.0524463653564
   },
   {
+    "path": "C:\\Users\\Lenovo\\OneDrive\\Desktop\\V coding\\Ai_Deepfake\\new_project\\backend\\eval\\real\\17.jpeg",
     "filename": "17.jpeg",
     "ground_truth": "REAL",
     "ground_truth_num": 0,
-    "fake_prob": 0.0,
-    "views": 3,
-    "latency_ms": 7339.0
+    "fake_prob": 0.0005549637135118246,
+    "views": 1,
+    "latency_ms": 2934.6461296081543
   },
   {
+    "path": "C:\\Users\\Lenovo\\OneDrive\\Desktop\\V coding\\Ai_Deepfake\\new_project\\backend\\eval\\real\\18.jpeg",
     "filename": "18.jpeg",
     "ground_truth": "REAL",
     "ground_truth_num": 0,
-    "fake_prob": 0.0,
-    "views": 3,
-    "latency_ms": 9131.0
+    "fake_prob": 0.0005549637135118246,
+    "views": 1,
+    "latency_ms": 4412.072420120239
   },
   {
+    "path": "C:\\Users\\Lenovo\\OneDrive\\Desktop\\V coding\\Ai_Deepfake\\new_project\\backend\\eval\\real\\19.jpeg",
     "filename": "19.jpeg",
     "ground_truth": "REAL",
     "ground_truth_num": 0,
-    "fake_prob": 0.0,
-    "views": 3,
-    "latency_ms": 29343.0
+    "fake_prob": 0.0005549637135118246,
+    "views": 1,
+    "latency_ms": 5110.347747802734
   },
   {
+    "path": "C:\\Users\\Lenovo\\OneDrive\\Desktop\\V coding\\Ai_Deepfake\\new_project\\backend\\eval\\real\\2.jpeg",
     "filename": "2.jpeg",
     "ground_truth": "REAL",
     "ground_truth_num": 0,
-    "fake_prob": 0.0,
-    "views": 3,
-    "latency_ms": 4768.0
+    "fake_prob": 0.00016055439482443035,
+    "views": 1,
+    "latency_ms": 5232.45096206665
   },
   {
+    "path": "C:\\Users\\Lenovo\\OneDrive\\Desktop\\V coding\\Ai_Deepfake\\new_project\\backend\\eval\\real\\3.jpeg",
     "filename": "3.jpeg",
     "ground_truth": "REAL",
     "ground_truth_num": 0,
-    "fake_prob": 0.0,
-    "views": 3,
-    "latency_ms": 6746.0
+    "fake_prob": 9.46366271818988e-05,
+    "views": 1,
+    "latency_ms": 5256.373643875122
   },
   {
+    "path": "C:\\Users\\Lenovo\\OneDrive\\Desktop\\V coding\\Ai_Deepfake\\new_project\\backend\\eval\\real\\4.jpeg",
     "filename": "4.jpeg",
     "ground_truth": "REAL",
     "ground_truth_num": 0,
-    "fake_prob": 0.0,
-    "views": 3,
-    "latency_ms": 8017.0
+    "fake_prob": 0.0009140883339568973,
+    "views": 1,
+    "latency_ms": 4570.178031921387
   },
   {
+    "path": "C:\\Users\\Lenovo\\OneDrive\\Desktop\\V coding\\Ai_Deepfake\\new_project\\backend\\eval\\real\\44.jpeg",
     "filename": "44.jpeg",
     "ground_truth": "REAL",
     "ground_truth_num": 0,
-    "fake_prob": 0.0,
-    "views": 3,
-    "latency_ms": 7755.0
+    "fake_prob": 0.00021260154608171433,
+    "views": 1,
+    "latency_ms": 3426.89847946167
   },
   {
+    "path": "C:\\Users\\Lenovo\\OneDrive\\Desktop\\V coding\\Ai_Deepfake\\new_project\\backend\\eval\\real\\458.jpeg",
     "filename": "458.jpeg",
     "ground_truth": "REAL",
     "ground_truth_num": 0,
-    "fake_prob": 0.0,
-    "views": 3,
-    "latency_ms": 7574.0
+    "fake_prob": 0.0003248518332839012,
+    "views": 1,
+    "latency_ms": 2616.914987564087
   },
   {
+    "path": "C:\\Users\\Lenovo\\OneDrive\\Desktop\\V coding\\Ai_Deepfake\\new_project\\backend\\eval\\real\\5.jpeg",
     "filename": "5.jpeg",
     "ground_truth": "REAL",
     "ground_truth_num": 0,
-    "fake_prob": 0.0,
-    "views": 3,
-    "latency_ms": 7619.0
+    "fake_prob": 0.00021413117065094411,
+    "views": 1,
+    "latency_ms": 2600.548505783081
   },
   {
+    "path": "C:\\Users\\Lenovo\\OneDrive\\Desktop\\V coding\\Ai_Deepfake\\new_project\\backend\\eval\\real\\55.jpeg",
     "filename": "55.jpeg",
     "ground_truth": "REAL",
     "ground_truth_num": 0,
-    "fake_prob": 0.0,
-    "views": 3,
-    "latency_ms": 7576.0
+    "fake_prob": 0.0003273941401857883,
+    "views": 1,
+    "latency_ms": 2592.0984745025635
   },
   {
+    "path": "C:\\Users\\Lenovo\\OneDrive\\Desktop\\V coding\\Ai_Deepfake\\new_project\\backend\\eval\\real\\555.jpeg",
     "filename": "555.jpeg",
     "ground_truth": "REAL",
     "ground_truth_num": 0,
-    "fake_prob": 0.0,
-    "views": 3,
-    "latency_ms": 7546.0
+    "fake_prob": 0.00011268342495895922,
+    "views": 1,
+    "latency_ms": 2649.2080688476562
   },
   {
+    "path": "C:\\Users\\Lenovo\\OneDrive\\Desktop\\V coding\\Ai_Deepfake\\new_project\\backend\\eval\\real\\6.jpeg",
     "filename": "6.jpeg",
     "ground_truth": "REAL",
     "ground_truth_num": 0,
-    "fake_prob": 0.0,
-    "views": 3,
-    "latency_ms": 7547.0
+    "fake_prob": 0.0005278511089272797,
+    "views": 1,
+    "latency_ms": 2503.371477127075
   },
   {
+    "path": "C:\\Users\\Lenovo\\OneDrive\\Desktop\\V coding\\Ai_Deepfake\\new_project\\backend\\eval\\real\\7.jpeg",
     "filename": "7.jpeg",
     "ground_truth": "REAL",
     "ground_truth_num": 0,
-    "fake_prob": 0.0,
-    "views": 3,
-    "latency_ms": 7462.0
+    "fake_prob": 0.00018007760809268802,
+    "views": 1,
+    "latency_ms": 2532.6907634735107
   },
   {
+    "path": "C:\\Users\\Lenovo\\OneDrive\\Desktop\\V coding\\Ai_Deepfake\\new_project\\backend\\eval\\real\\78.jpeg",
     "filename": "78.jpeg",
     "ground_truth": "REAL",
     "ground_truth_num": 0,
-    "fake_prob": 0.0,
-    "views": 3,
-    "latency_ms": 7249.0
+    "fake_prob": 0.00025860758614726365,
+    "views": 1,
+    "latency_ms": 2482.9695224761963
   },
   {
+    "path": "C:\\Users\\Lenovo\\OneDrive\\Desktop\\V coding\\Ai_Deepfake\\new_project\\backend\\eval\\real\\8.jpeg",
     "filename": "8.jpeg",
     "ground_truth": "REAL",
     "ground_truth_num": 0,
-    "fake_prob": 0.0,
-    "views": 3,
-    "latency_ms": 7081.0
+    "fake_prob": 0.00037894121487624943,
+    "views": 1,
+    "latency_ms": 2532.371997833252
   },
   {
+    "path": "C:\\Users\\Lenovo\\OneDrive\\Desktop\\V coding\\Ai_Deepfake\\new_project\\backend\\eval\\real\\9.jpeg",
     "filename": "9.jpeg",
     "ground_truth": "REAL",
     "ground_truth_num": 0,
-    "fake_prob": 0.0,
-    "views": 3,
-    "latency_ms": 7373.0
+    "fake_prob": 0.0002132204972440377,
+    "views": 1,
+    "latency_ms": 2472.0067977905273
   },
   {
+    "path": "C:\\Users\\Lenovo\\OneDrive\\Desktop\\V coding\\Ai_Deepfake\\new_project\\backend\\eval\\real\\WhatsApp Image 2026-10-26 at 1.05.57 AM.jpeg",
     "filename": "WhatsApp Image 2026-10-26 at 1.05.57 AM.jpeg",
     "ground_truth": "REAL",
     "ground_truth_num": 0,
-    "fake_prob": 0.0,
-    "views": 3,
-    "latency_ms": 7659.0
+    "fake_prob": 0.00013275060337036848,
+    "views": 1,
+    "latency_ms": 2629.7006607055664
   },
   {
+    "path": "C:\\Users\\Lenovo\\OneDrive\\Desktop\\V coding\\Ai_Deepfake\\new_project\\backend\\eval\\fake\\1990s beautiful blonde Supergirl.webp",
     "filename": "1990s beautiful blonde Supergirl.webp",
     "ground_truth": "FAKE",
     "ground_truth_num": 1,
-    "fake_prob": 0.997,
-    "views": 3,
-    "latency_ms": 7650.0
+    "fake_prob": 0.999620795249939,
+    "views": 1,
+    "latency_ms": 3072.1664428710938
   },
   {
+    "path": "C:\\Users\\Lenovo\\OneDrive\\Desktop\\V coding\\Ai_Deepfake\\new_project\\backend\\eval\\fake\\4-year-old boy.webp",
     "filename": "4-year-old boy.webp",
     "ground_truth": "FAKE",
     "ground_truth_num": 1,
-    "fake_prob": 0.9990000000000001,
-    "views": 3,
-    "latency_ms": 7745.0
+    "fake_prob": 0.9979704022407532,
+    "views": 1,
+    "latency_ms": 2608.9766025543213
   },
   {
+    "path": "C:\\Users\\Lenovo\\OneDrive\\Desktop\\V coding\\Ai_Deepfake\\new_project\\backend\\eval\\fake\\A beautiful woman with platinum blond hair that is.webp",
     "filename": "A beautiful woman with platinum blond hair that is.webp",
     "ground_truth": "FAKE",
     "ground_truth_num": 1,
-    "fake_prob": 0.975,
-    "views": 3,
-    "latency_ms": 7667.0
+    "fake_prob": 0.9956533908843994,
+    "views": 1,
+    "latency_ms": 2762.749195098877
   },
   {
+    "path": "C:\\Users\\Lenovo\\OneDrive\\Desktop\\V coding\\Ai_Deepfake\\new_project\\backend\\eval\\fake\\A black man; cushite; tight nappy curls low level.webp",
     "filename": "A black man; cushite; tight nappy curls low level.webp",
     "ground_truth": "FAKE",
     "ground_truth_num": 1,
-    "fake_prob": 0.8290000000000001,
-    "views": 3,
-    "latency_ms": 7621.0
+    "fake_prob": 0.9551532864570618,
+    "views": 1,
+    "latency_ms": 2579.878091812134
   },
   {
+    "path": "C:\\Users\\Lenovo\\OneDrive\\Desktop\\V coding\\Ai_Deepfake\\new_project\\backend\\eval\\fake\\a cat in a business suit sitting in a crowded subw.webp",
     "filename": "a cat in a business suit sitting in a crowded subw.webp",
     "ground_truth": "FAKE",
     "ground_truth_num": 1,
-    "fake_prob": 0.68,
-    "views": 3,
-    "latency_ms": 7608.0
+    "fake_prob": 0.8721519112586975,
+    "views": 1,
+    "latency_ms": 2761.849880218506
   },
   {
+    "path": "C:\\Users\\Lenovo\\OneDrive\\Desktop\\V coding\\Ai_Deepfake\\new_project\\backend\\eval\\fake\\A giraffe with a cigar in its mouth.webp",
     "filename": "A giraffe with a cigar in its mouth.webp",
     "ground_truth": "FAKE",
     "ground_truth_num": 1,
-    "fake_prob": 1.0,
-    "views": 3,
-    "latency_ms": 7709.0
+    "fake_prob": 0.9998713731765747,
+    "views": 1,
+    "latency_ms": 2583.0042362213135
   },
   {
+    "path": "C:\\Users\\Lenovo\\OneDrive\\Desktop\\V coding\\Ai_Deepfake\\new_project\\backend\\eval\\fake\\A girl with long straight hair in 80\u2019s anime vinta.webp",
     "filename": "A girl with long straight hair in 80\u2019s anime vinta.webp",
     "ground_truth": "FAKE",
     "ground_truth_num": 1,
-    "fake_prob": 1.0,
-    "views": 3,
-    "latency_ms": 7568.0
+    "fake_prob": 0.9999507665634155,
+    "views": 1,
+    "latency_ms": 2601.916790008545
   },
   {
+    "path": "C:\\Users\\Lenovo\\OneDrive\\Desktop\\V coding\\Ai_Deepfake\\new_project\\backend\\eval\\fake\\A pretty girl in san francisco.webp",
     "filename": "A pretty girl in san francisco.webp",
     "ground_truth": "FAKE",
     "ground_truth_num": 1,
-    "fake_prob": 1.0,
-    "views": 3,
-    "latency_ms": 7578.0
+    "fake_prob": 0.9995488524436951,
+    "views": 1,
+    "latency_ms": 2569.2718029022217
   },
   {
+    "path": "C:\\Users\\Lenovo\\OneDrive\\Desktop\\V coding\\Ai_Deepfake\\new_project\\backend\\eval\\fake\\A pretty girl in Tokyo.webp",
     "filename": "A pretty girl in Tokyo.webp",
     "ground_truth": "FAKE",
     "ground_truth_num": 1,
-    "fake_prob": 1.0,
-    "views": 3,
-    "latency_ms": 7495.0
+    "fake_prob": 0.9997251629829407,
+    "views": 1,
+    "latency_ms": 2612.992763519287
   },
   {
+    "path": "C:\\Users\\Lenovo\\OneDrive\\Desktop\\V coding\\Ai_Deepfake\\new_project\\backend\\eval\\fake\\a professional production photo of a Lara Croft le.webp",
     "filename": "a professional production photo of a Lara Croft le.webp",
     "ground_truth": "FAKE",
     "ground_truth_num": 1,
-    "fake_prob": 0.9640000000000001,
-    "views": 3,
-    "latency_ms": 7483.0
+    "fake_prob": 0.9977155923843384,
+    "views": 1,
+    "latency_ms": 2589.1213417053223
   },
   {
+    "path": "C:\\Users\\Lenovo\\OneDrive\\Desktop\\V coding\\Ai_Deepfake\\new_project\\backend\\eval\\fake\\a realistic version of calvin and hobbes.webp",
     "filename": "a realistic version of calvin and hobbes.webp",
     "ground_truth": "FAKE",
     "ground_truth_num": 1,
-    "fake_prob": 1.0,
-    "views": 3,
-    "latency_ms": 7635.0
+    "fake_prob": 0.9999492168426514,
+    "views": 1,
+    "latency_ms": 2570.0061321258545
   },
   {
+    "path": "C:\\Users\\Lenovo\\OneDrive\\Desktop\\V coding\\Ai_Deepfake\\new_project\\backend\\eval\\fake\\a young woman photographed with soft lighting agai.webp",
     "filename": "a young woman photographed with soft lighting agai.webp",
     "ground_truth": "FAKE",
     "ground_truth_num": 1,
-    "fake_prob": 0.804,
-    "views": 3,
-    "latency_ms": 7720.0
+    "fake_prob": 0.993493378162384,
+    "views": 1,
+    "latency_ms": 2591.214418411255
   },
   {
+    "path": "C:\\Users\\Lenovo\\OneDrive\\Desktop\\V coding\\Ai_Deepfake\\new_project\\backend\\eval\\fake\\An extremely unremarkable iPhone photo with no cle.webp",
     "filename": "An extremely unremarkable iPhone photo with no cle.webp",
     "ground_truth": "FAKE",
     "ground_truth_num": 1,
-    "fake_prob": 0.9329999999999999,
-    "views": 3,
-    "latency_ms": 7596.0
+    "fake_prob": 0.9959118366241455,
+    "views": 1,
+    "latency_ms": 2632.4098110198975
   },
   {
+    "path": "C:\\Users\\Lenovo\\OneDrive\\Desktop\\V coding\\Ai_Deepfake\\new_project\\backend\\eval\\fake\\attractive woman in stockings.webp",
     "filename": "attractive woman in stockings.webp",
     "ground_truth": "FAKE",
     "ground_truth_num": 1,
-    "fake_prob": 1.0,
-    "views": 3,
-    "latency_ms": 7688.0
+    "fake_prob": 0.9999576807022095,
+    "views": 1,
+    "latency_ms": 2600.37899017334
   },
   {
+    "path": "C:\\Users\\Lenovo\\OneDrive\\Desktop\\V coding\\Ai_Deepfake\\new_project\\backend\\eval\\fake\\barack obama hoopin.webp",
     "filename": "barack obama hoopin.webp",
     "ground_truth": "FAKE",
     "ground_truth_num": 1,
-    "fake_prob": 0.523,
-    "views": 3,
-    "latency_ms": 7589.0
+    "fake_prob": 0.9962632060050964,
+    "views": 1,
+    "latency_ms": 2580.9381008148193
   },
   {
+    "path": "C:\\Users\\Lenovo\\OneDrive\\Desktop\\V coding\\Ai_Deepfake\\new_project\\backend\\eval\\fake\\cctv screenshot (so.webp",
     "filename": "cctv screenshot (so.webp",
     "ground_truth": "FAKE",
     "ground_truth_num": 1,
-    "fake_prob": 1.0,
-    "views": 3,
-    "latency_ms": 7802.0
+    "fake_prob": 0.9999605417251587,
+    "views": 1,
+    "latency_ms": 2964.073419570923
   },
   {
+    "path": "C:\\Users\\Lenovo\\OneDrive\\Desktop\\V coding\\Ai_Deepfake\\new_project\\backend\\eval\\fake\\Create an image if a ginger tabby cat laying cozy.webp",
     "filename": "Create an image if a ginger tabby cat laying cozy.webp",
     "ground_truth": "FAKE",
     "ground_truth_num": 1,
-    "fake_prob": 1.0,
-    "views": 3,
-    "latency_ms": 7644.0
+    "fake_prob": 0.9999405145645142,
+    "views": 1,
+    "latency_ms": 2763.718605041504
   },
   {
+    "path": "C:\\Users\\Lenovo\\OneDrive\\Desktop\\V coding\\Ai_Deepfake\\new_project\\backend\\eval\\fake\\grungy photo of Kirby shown during a tour of duty.webp",
     "filename": "grungy photo of Kirby shown during a tour of duty.webp",
     "ground_truth": "FAKE",
     "ground_truth_num": 1,
-    "fake_prob": 1.0,
-    "views": 3,
-    "latency_ms": 7557.0
+    "fake_prob": 0.99994957447052,
+    "views": 1,
+    "latency_ms": 2776.587724685669
   },
   {
+    "path": "C:\\Users\\Lenovo\\OneDrive\\Desktop\\V coding\\Ai_Deepfake\\new_project\\backend\\eval\\fake\\Japanese.webp",
     "filename": "Japanese.webp",
     "ground_truth": "FAKE",
     "ground_truth_num": 1,
-    "fake_prob": 1.0,
-    "views": 3,
-    "latency_ms": 7610.0
+    "fake_prob": 0.9998947381973267,
+    "views": 1,
+    "latency_ms": 2784.5377922058105
   },
   {
+    "path": "C:\\Users\\Lenovo\\OneDrive\\Desktop\\V coding\\Ai_Deepfake\\new_project\\backend\\eval\\fake\\Link as a corporate bro.webp",
     "filename": "Link as a corporate bro.webp",
     "ground_truth": "FAKE",
     "ground_truth_num": 1,
-    "fake_prob": 1.0,
-    "views": 3,
-    "latency_ms": 7655.0
+    "fake_prob": 0.9999593496322632,
+    "views": 1,
+    "latency_ms": 2765.3517723083496
   },
   {
+    "path": "C:\\Users\\Lenovo\\OneDrive\\Desktop\\V coding\\Ai_Deepfake\\new_project\\backend\\eval\\fake\\movie scene.webp",
     "filename": "movie scene.webp",
     "ground_truth": "FAKE",
     "ground_truth_num": 1,
-    "fake_prob": 0.085,
-    "views": 3,
-    "latency_ms": 7695.0
+    "fake_prob": 0.4642283320426941,
+    "views": 1,
+    "latency_ms": 2858.625650405884
   },
   {
+    "path": "C:\\Users\\Lenovo\\OneDrive\\Desktop\\V coding\\Ai_Deepfake\\new_project\\backend\\eval\\fake\\photo realistic albert einstein at a gym pumping i.webp",
     "filename": "photo realistic albert einstein at a gym pumping i.webp",
     "ground_truth": "FAKE",
     "ground_truth_num": 1,
-    "fake_prob": 1.0,
-    "views": 3,
-    "latency_ms": 7602.0
+    "fake_prob": 0.9999322891235352,
+    "views": 1,
+    "latency_ms": 2891.5576934814453
   },
   {
+    "path": "C:\\Users\\Lenovo\\OneDrive\\Desktop\\V coding\\Ai_Deepfake\\new_project\\backend\\eval\\fake\\portrait of a sensual japanese stewardess on PAN A.webp",
     "filename": "portrait of a sensual japanese stewardess on PAN A.webp",
     "ground_truth": "FAKE",
     "ground_truth_num": 1,
-    "fake_prob": 0.9309999999999999,
-    "views": 3,
-    "latency_ms": 7793.0
+    "fake_prob": 0.9980290532112122,
+    "views": 1,
+    "latency_ms": 2651.5302658081055
   },
   {
+    "path": "C:\\Users\\Lenovo\\OneDrive\\Desktop\\V coding\\Ai_Deepfake\\new_project\\backend\\eval\\fake\\silver KITH jacket.webp",
     "filename": "silver KITH jacket.webp",
     "ground_truth": "FAKE",
     "ground_truth_num": 1,
-    "fake_prob": 1.0,
-    "views": 3,
-    "latency_ms": 7482.0
+    "fake_prob": 0.999870777130127,
+    "views": 1,
+    "latency_ms": 2704.1382789611816
   },
   {
+    "path": "C:\\Users\\Lenovo\\OneDrive\\Desktop\\V coding\\Ai_Deepfake\\new_project\\backend\\eval\\fake\\the stock trading floor is filled with water.webp",
     "filename": "the stock trading floor is filled with water.webp",
     "ground_truth": "FAKE",
     "ground_truth_num": 1,
-    "fake_prob": 0.9990000000000001,
-    "views": 3,
-    "latency_ms": 7953.0
+    "fake_prob": 0.9997406601905823,
+    "views": 1,
+    "latency_ms": 2632.683515548706
   },
   {
+    "path": "C:\\Users\\Lenovo\\OneDrive\\Desktop\\V coding\\Ai_Deepfake\\new_project\\backend\\eval\\fake\\Venom Snake from Metal Gear Solid 5 receiving ther.webp",
     "filename": "Venom Snake from Metal Gear Solid 5 receiving ther.webp",
     "ground_truth": "FAKE",
     "ground_truth_num": 1,
-    "fake_prob": 0.992,
-    "views": 3,
-    "latency_ms": 7918.0
+    "fake_prob": 0.9992583394050598,
+    "views": 1,
+    "latency_ms": 2672.6086139678955
   },
   {
+    "path": "C:\\Users\\Lenovo\\OneDrive\\Desktop\\V coding\\Ai_Deepfake\\new_project\\backend\\eval\\fake\\very pretty caucasian girl at age 18(with subtle a.webp",
     "filename": "very pretty caucasian girl at age 18(with subtle a.webp",
     "ground_truth": "FAKE",
     "ground_truth_num": 1,
-    "fake_prob": 0.948,
-    "views": 3,
-    "latency_ms": 7686.0
+    "fake_prob": 0.9992275238037109,
+    "views": 1,
+    "latency_ms": 2808.640718460083
   }
 ]

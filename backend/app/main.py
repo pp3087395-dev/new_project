@@ -50,17 +50,22 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# Configure CORS for local dev + deployed Vercel frontend
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[
+# Configure CORS origins from ALLOWED_ORIGINS env var (comma-separated) with local dev fallback
+raw_allowed_origins = os.environ.get("ALLOWED_ORIGINS", "")
+if raw_allowed_origins.strip():
+    allowed_origins = [o.strip() for o in raw_allowed_origins.split(",") if o.strip()]
+else:
+    allowed_origins = [
         "http://localhost:5173",
         "http://127.0.0.1:5173",
         "http://localhost:3000",
         "http://127.0.0.1:3000",
         "https://new-project-theta-taupe.vercel.app",
-    ],
-    allow_origin_regex=r"https://.*\.vercel\.app",
+    ]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

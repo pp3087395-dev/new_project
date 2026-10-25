@@ -3,50 +3,50 @@
 ================================================================================
 Model Backend     : smaug (Smaug AI Image Detector (Abacus AI))
 Dataset Size      : 55 images (28 Real, 27 Fake)
-Average Latency   : 7944.1 ms / image on CPU
-Peak Working RAM  : 2707.8 MB
+Average Latency   : 2786.0 ms / image on CPU
+Peak Working RAM  : 2522.6 MB
 Cutoff Threshold  : 0.50 (Uncertain Band: +/-0.10)
 Uncertain Window  : [0.40, 0.60] -> INCONCLUSIVE
 --------------------------------------------------------------------------------
 1. PERFORMANCE SUMMARY (Threshold = 0.50, Band = +/-0.10)
-   Conclusive Accuracy    : 98.15% (53/54 decisive verdicts)
-   Strict Accuracy        : 96.36% (53/55 total dataset)
+   Conclusive Accuracy    : 100.00% (54/54 decisive verdicts)
+   Strict Accuracy        : 98.18% (54/55 total dataset)
    Inconclusive Rate      : 1.82% (1/55 within uncertain band)
    False Positive Rate    : 0.00% (0/28 real photos called fake)
-   False Negative Rate    : 3.70% (1/27 AI images missed as real)
+   False Negative Rate    : 0.00% (0/27 AI images missed as real)
 
 2. THREE-WAY CONFUSION MATRIX
                           Pred REAL    Pred INCONCLUSIVE    Pred FAKE
    Actual REAL (Authentic): TN =   28        INC =    0         FP =    0
-   Actual FAKE (Synthetic): FN =    1        INC =    1         TP =   25
+   Actual FAKE (Synthetic): FN =    0        INC =    1         TP =   26
 --------------------------------------------------------------------------------
 3. INCONCLUSIVE / BORDERLINE FILES (1 total in [0.40, 0.60]):
-   - [Truth: FAKE -> INCONCLUSIVE] barack obama hoopin.webp            (FakeProb:  52.3%)
+   - [Truth: FAKE -> INCONCLUSIVE] movie scene.webp                    (FakeProb:  46.4%)
 --------------------------------------------------------------------------------
-4. DEFINITIVE MISCLASSIFICATIONS (1 total):
-   - [FAKE -> Pred REAL] movie scene.webp                    (FakeProb:   8.5%)
+4. DEFINITIVE MISCLASSIFICATIONS (0 total):
+   None! Zero definitive false positives or false negatives outside the band.
 --------------------------------------------------------------------------------
 5. OPTIMAL THRESHOLD SWEEP (Band = +/-0.10)
    Threshold | Concl. Acc | Strict Acc | Inconcl % | FPR (Real->Fake) | FNR (Fake->Real)
-      0.05   |   100.0%   |    47.3%   |    52.7%   |        0.0%      |        0.0% <-- OPTIMAL
-      0.10   |   100.0%   |    47.3%   |    52.7%   |        0.0%      |        0.0%
-      0.15   |   100.0%   |    98.2%   |     1.8%   |        0.0%      |        0.0%
-      0.20   |    98.2%   |    98.2%   |     0.0%   |        0.0%      |        3.7%
-      0.25   |    98.2%   |    98.2%   |     0.0%   |        0.0%      |        3.7%
-      0.30   |    98.2%   |    98.2%   |     0.0%   |        0.0%      |        3.7%
-      0.35   |    98.2%   |    98.2%   |     0.0%   |        0.0%      |        3.7%
-      0.40   |    98.2%   |    98.2%   |     0.0%   |        0.0%      |        3.7%
-      0.45   |    98.1%   |    96.4%   |     1.8%   |        0.0%      |        3.7%
-      0.50   |    98.1%   |    96.4%   |     1.8%   |        0.0%      |        3.7%
-      0.55   |    98.1%   |    96.4%   |     1.8%   |        0.0%      |        3.7%
-      0.60   |    98.1%   |    94.5%   |     3.6%   |        0.0%      |        3.7%
-      0.65   |    96.3%   |    94.5%   |     1.8%   |        0.0%      |        7.4%
-      0.70   |    96.3%   |    94.5%   |     1.8%   |        0.0%      |        7.4%
-      0.75   |    96.2%   |    90.9%   |     5.5%   |        0.0%      |        7.4%
-      0.80   |    94.3%   |    90.9%   |     3.6%   |        0.0%      |       11.1%
-      0.85   |    94.0%   |    85.5%   |     9.1%   |        0.0%      |       11.1%
-      0.90   |    90.3%   |    50.9%   |    43.6%   |        0.0%      |       11.1%
-      0.95   |    84.8%   |    50.9%   |    40.0%   |        0.0%      |       18.5%
+      0.05   |   100.0%   |    49.1%   |    50.9%   |        0.0%      |        0.0% <-- OPTIMAL
+      0.10   |   100.0%   |    49.1%   |    50.9%   |        0.0%      |        0.0%
+      0.15   |   100.0%   |   100.0%   |     0.0%   |        0.0%      |        0.0%
+      0.20   |   100.0%   |   100.0%   |     0.0%   |        0.0%      |        0.0%
+      0.25   |   100.0%   |   100.0%   |     0.0%   |        0.0%      |        0.0%
+      0.30   |   100.0%   |   100.0%   |     0.0%   |        0.0%      |        0.0%
+      0.35   |   100.0%   |   100.0%   |     0.0%   |        0.0%      |        0.0%
+      0.40   |   100.0%   |    98.2%   |     1.8%   |        0.0%      |        0.0%
+      0.45   |   100.0%   |    98.2%   |     1.8%   |        0.0%      |        0.0%
+      0.50   |   100.0%   |    98.2%   |     1.8%   |        0.0%      |        0.0%
+      0.55   |   100.0%   |    98.2%   |     1.8%   |        0.0%      |        0.0%
+      0.60   |    98.2%   |    98.2%   |     0.0%   |        0.0%      |        3.7%
+      0.65   |    98.2%   |    98.2%   |     0.0%   |        0.0%      |        3.7%
+      0.70   |    98.2%   |    98.2%   |     0.0%   |        0.0%      |        3.7%
+      0.75   |    98.2%   |    98.2%   |     0.0%   |        0.0%      |        3.7%
+      0.80   |    98.1%   |    96.4%   |     1.8%   |        0.0%      |        3.7%
+      0.85   |    98.1%   |    96.4%   |     1.8%   |        0.0%      |        3.7%
+      0.90   |    96.6%   |    50.9%   |    47.3%   |        0.0%      |        3.7%
+      0.95   |    96.6%   |    50.9%   |    47.3%   |        0.0%      |        3.7%
 --------------------------------------------------------------------------------
    RECOMMENDED OPTIMAL THRESHOLD: 0.05 (Conclusive Acc: 100.0%, FPR: 0.0%)
 ================================================================================

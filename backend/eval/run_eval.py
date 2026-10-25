@@ -59,6 +59,17 @@ def parse_args():
         help="Use cached model inferences if available in cache_{backend}.json"
     )
     parser.add_argument(
+        "--no-cache",
+        action="store_true",
+        help="Force fresh inference without reading cache"
+    )
+    parser.add_argument(
+        "--crops",
+        type=int,
+        default=None,
+        help="Number of crops for Smaug backend (1, 2, or 3)"
+    )
+    parser.add_argument(
         "--output",
         type=str,
         default=None,
@@ -139,12 +150,18 @@ def run_evaluation(
     backend: str,
     default_threshold: float = 0.50,
     uncertain_band: float = 0.10,
-    use_cache: bool = False
+    use_cache: bool = False,
+    crops: Optional[int] = None,
+    no_cache: bool = False
 ) -> Tuple[str, Dict]:
+    if crops is not None:
+        os.environ["SMAUG_CROPS"] = str(crops)
+
     eval_dir = SCRIPT_DIR
     real_dir = eval_dir / "real"
     fake_dir = eval_dir / "fake"
-    cache_file = eval_dir / f"cache_{backend}.json"
+    crops_suffix = f"_crops{crops}" if (backend == "smaug" and crops is not None) else ""
+    cache_file = eval_dir / f"cache_{backend}{crops_suffix}.json"
 
     real_files = collect_images(real_dir)
     fake_files = collect_images(fake_dir)
@@ -170,7 +187,7 @@ def run_evaluation(
 
     # Check if cached results exist
     cached_map = {}
-    if (use_cache or cache_file.exists()):
+    if not no_cache and (use_cache or cache_file.exists()):
         try:
             import json
             with open(cache_file, "r", encoding="utf-8") as f:
@@ -441,12 +458,15 @@ def main():
         backend=args.backend,
         default_threshold=args.threshold,
         uncertain_band=args.uncertain_band,
-        use_cache=args.use_cache
+        use_cache=args.use_cache,
+        crops=args.crops,
+        no_cache=args.no_cache
     )
 
     output_path = args.output
     if output_path is None and not data.get("empty"):
-        output_path = str(SCRIPT_DIR / f"results_{args.backend}.txt")
+        suffix = f"_crops{args.crops}" if (args.backend == "smaug" and args.crops is not None) else ""
+        output_path = str(SCRIPT_DIR / f"results_{args.backend}{suffix}.txt")
 
     if output_path and not data.get("empty"):
         out_file = Path(output_path)

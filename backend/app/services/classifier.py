@@ -154,7 +154,7 @@ class SmaugBackend(BaseClassifierBackend):
 
     def __init__(self):
         self.detector = None
-        self.crops = int(os.environ.get("SMAUG_CROPS", "3"))
+        self.crops = int(os.environ.get("SMAUG_CROPS", "1"))
 
     def initialize(self, hf_token: Optional[str] = None):
         from huggingface_hub import snapshot_download
@@ -168,9 +168,48 @@ class SmaugBackend(BaseClassifierBackend):
 
     def predict_fake_probability(self, image: Image.Image) -> Tuple[float, int, Optional[Dict[str, float]]]:
         img = safe_to_rgb(ImageOps.exif_transpose(image) or image)
-        prob = self.detector(img, crops=self.crops)
-        fake_prob = float(prob)
-        return fake_prob, self.crops, None
+        
+        # Max-dimension cap at 2048px to prevent extreme memory and resize latency on huge camera images
+        cap_2048 = os.environ.get("CAP_INPUT_2048", "true").lower() in ("true", "1", "yes")
+        max_dim = max(img.size)
+        if cap_2048 and max_dim > 2048:
+            scale = 2048.0 / max_dim
+            new_size = (int(round(img.width * scale)), int(round(img.height * scale)))
+            img = img.resize(new_size, Image.Resampling.LANCZOS)
+
+        crops = int(os.environ.get("SMAUG_CROPS", str(self.crops)))
+
+        if crops in (1, 3):
+            prob = self.detector(img, crops=crops)
+            fake_prob = float(prob)
+            return fake_prob, crops, None
+        elif crops == 2:
+            import torch
+            import math
+            # Custom 2-crop evaluation: evaluate start and end crops along the longer dimension
+            SIDE, CROP = 576, 528
+            w, h = img.size
+            if min(w, h) > SIDE:
+                s = SIDE / min(w, h)
+                scaled = img.resize((round(w * s), round(h * s)), Image.LANCZOS)
+            elif min(w, h) < CROP:
+                s = CROP / min(w, h)
+                scaled = img.resize((math.ceil(w * s), math.ceil(h * s)), Image.BICUBIC)
+            else:
+                scaled = img
+            sw, sh = scaled.size
+            cx, cy = (sw - CROP) // 2, (sh - CROP) // 2
+            if sw >= sh:
+                crop_list = [scaled.crop((x, cy, x + CROP, cy + CROP)) for x in (0, sw - CROP)]
+            else:
+                crop_list = [scaled.crop((cx, y, cx + CROP, y + CROP)) for y in (0, sh - CROP)]
+            flat = [{'image': c} for c in crop_list]
+            logits = self.detector.st.encode(flat, batch_size=16, convert_to_tensor=True).float().view(1, 2)
+            prob = float(torch.sigmoid(logits.mean(1)).item())
+            return prob, 2, None
+        else:
+            prob = self.detector(img, crops=1)
+            return float(prob), 1, None
 
 
 class LegacyBackend(BaseClassifierBackend):
