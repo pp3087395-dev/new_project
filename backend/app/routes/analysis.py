@@ -23,7 +23,7 @@ def health_check():
             "Real 2D-FFT frequency spectrum computation",
             "Image EXIF and dimension metadata extraction",
             "Radial spectral energy distribution analysis",
-            "Pretrained Vision Transformer AI-generated image classification (ONNX Runtime CPU)"
+            "Pretrained Vision Transformer AI-generated image classification (Dual-View ViT CPU)"
         ]
     }
 

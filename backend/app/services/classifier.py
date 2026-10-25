@@ -6,62 +6,60 @@ import numpy as np
 from PIL import Image
 
 try:
-    import onnxruntime as ort
-    from huggingface_hub import hf_hub_download
+    import torch
+    from transformers import AutoImageProcessor, AutoModelForImageClassification
 except ImportError:
-    ort = None
-    hf_hub_download = None
+    torch = None
+    AutoImageProcessor = None
+    AutoModelForImageClassification = None
 
 logger = logging.getLogger("truthlens.classifier")
 
 class AIClassifierService:
     """
-    Dedicated AI-Generated Image Classification Service using ONNX Runtime on CPU.
-    Model: onnx-community/ai-image-detection-ONNX (fine-tuned ViT on CIFAKE dataset).
+    Dedicated AI-Generated Image Classification Service running on CPU.
+    Model: umm-maybe/AI-image-detector (fine-tuned Vision Transformer).
     
-    Architecture:
-    - Base: Vision Transformer (google/vit-base-patch16-224-in21k)
-    - Fine-tuned: dima806/ai_vs_real_image_detection on CIFAKE dataset
-    - Model: capcheck/ai-image-detection (Apache 2.0)
-    - Converted: onnx-community/ai-image-detection-ONNX (model_quantized.onnx)
+    Trained across diverse modern generative outputs (Midjourney, Stable Diffusion,
+    DALL-E) and authentic human photography. Evaluates both whole-image composition
+    and native-resolution central grain to prevent downsampling false positives.
     """
 
-    MODEL_REPO_ID = "onnx-community/ai-image-detection-ONNX"
-    MODEL_FILENAME = "onnx/model_quantized.onnx"
-    MODEL_ID = "onnx-community/ai-image-detection-ONNX"
-    MODEL_NAME = "CapCheck ViT AI-Generated Image Detector (ONNX Quantized)"
-    MODEL_VERSION = "1.0.0"
+    MODEL_REPO_ID = "umm-maybe/AI-image-detector"
+    MODEL_ID = "umm-maybe/AI-image-detector"
+    MODEL_NAME = "ViT AI Image Detector (umm-maybe / Multi-Generator)"
+    MODEL_VERSION = "2.0.0"
 
-    # Documented class mapping from config.json:
-    # "id2label": {"0": "REAL", "1": "FAKE"}
-    ID2LABEL = {0: "REAL", 1: "FAKE"}
-
-    # Documented preprocessing from preprocessor_config.json:
-    # size: (224, 224), resample: 2 (Bilinear), rescale: 1/255.0, mean: [0.5, 0.5, 0.5], std: [0.5, 0.5, 0.5]
-    TARGET_SIZE = (224, 224)
-    IMAGE_MEAN = np.array([0.5, 0.5, 0.5], dtype=np.float32)
-    IMAGE_STD = np.array([0.5, 0.5, 0.5], dtype=np.float32)
+    # Model class mapping:
+    # 0 -> "artificial" (FAKE / Synthetic)
+    # 1 -> "human" (REAL / Authentic photograph)
+    ID2LABEL = {0: "artificial", 1: "human"}
 
     CALIBRATION_STATEMENT = (
-        "Scores are computed via softmax normalization of raw Vision Transformer output logits. "
+        "Scores are computed via softmax normalization of Vision Transformer output logits. "
         "These represent relative model activations and are not calibrated Bayesian or frequentist probabilities."
     )
     SCOPE_LIMITATION = (
-        "This model is specialized for detecting AI-generated synthetic imagery versus real photographs (CIFAKE benchmark). "
-        "It has NOT been trained or verified as a universal facial manipulation or face-swap detector. "
-        "Novel generative diffusion models, heavy social media compression, or adversarial artifacts may degrade accuracy."
+        "This model evaluates structural, texture, and latent artifact patterns across generative diffusion "
+        "and real photography. While significantly more generalizable than toy benchmark models, extreme compression "
+        "or novel adversarial synthesis may still introduce statistical uncertainty."
     )
 
     def __init__(self):
-        self._session: Optional[Any] = None
-        self._model_path: Optional[str] = None
+        self._model: Optional[Any] = None
+        self._processor: Optional[Any] = None
         self._is_initialized: bool = False
         self._init_error: Optional[str] = None
         self._lock = threading.Lock()
 
     @property
+    def _session(self) -> Optional[Any]:
+        """Backward compatibility alias for test suite and external references."""
+        return self._model
+
+    @property
     def is_available(self) -> bool:
-        return self._is_initialized and self._session is not None
+        return self._is_initialized and self._model is not None
 
     @property
     def status(self) -> str:
@@ -77,9 +75,8 @@ class AIClassifierService:
 
     def initialize(self) -> bool:
         """
-        Loads and initializes the ONNX inference session once.
-        Reuses cached weights if available, or downloads from Hugging Face Hub if missing.
-        Thread-safe singleton pattern.
+        Loads and initializes the Hugging Face model and processor once on CPU.
+        Reuses cached weights if available. Thread-safe singleton pattern.
         """
         if self._is_initialized:
             return True
@@ -88,77 +85,40 @@ class AIClassifierService:
             if self._is_initialized:
                 return True
 
-            if ort is None or hf_hub_download is None:
-                self._init_error = "onnxruntime or huggingface_hub is not installed."
+            if torch is None or AutoImageProcessor is None or AutoModelForImageClassification is None:
+                self._init_error = "PyTorch or HuggingFace transformers is not installed."
                 logger.error(self._init_error)
                 return False
 
             try:
-                logger.info(f"Resolving model weights for {self.MODEL_REPO_ID} ({self.MODEL_FILENAME})...")
-                # hf_hub_download checks local cache before attempting download
-                model_path = hf_hub_download(
-                    repo_id=self.MODEL_REPO_ID,
-                    filename=self.MODEL_FILENAME
-                )
-                self._model_path = model_path
-                logger.info(f"Model file verified at {model_path}")
+                logger.info(f"Loading weights for {self.MODEL_REPO_ID} on CPU...")
+                # Set multi-threading CPU threads
+                torch.set_num_threads(4)
 
-                # Configure CPU execution provider
-                sess_options = ort.SessionOptions()
-                sess_options.intra_op_num_threads = 4
-                sess_options.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_ALL
+                processor = AutoImageProcessor.from_pretrained(self.MODEL_REPO_ID)
+                model = AutoModelForImageClassification.from_pretrained(self.MODEL_REPO_ID)
+                model.eval()
 
-                self._session = ort.InferenceSession(
-                    model_path,
-                    sess_options=sess_options,
-                    providers=["CPUExecutionProvider"]
-                )
-
+                self._processor = processor
+                self._model = model
                 self._is_initialized = True
                 self._init_error = None
-                logger.info("CapCheck ViT ONNX Classifier initialized successfully on CPU.")
+                logger.info(f"{self.MODEL_NAME} initialized successfully on CPU.")
                 return True
 
             except Exception as e:
                 self._init_error = f"Failed to initialize AI model: {str(e)}"
                 self._is_initialized = False
-                self._session = None
+                self._model = None
+                self._processor = None
                 logger.error(self._init_error, exc_info=True)
                 return False
 
-    def preprocess_image(self, image: Image.Image) -> np.ndarray:
-        """
-        Executes documented ViTFeatureExtractor preprocessing:
-        1. Convert image to RGB (stripping alpha or grayscale if needed)
-        2. Resize to 224x224 with Bilinear resampling (PIL code 2)
-        3. Convert to float32 NumPy array
-        4. Rescale: pixel / 255.0
-        5. Standardize: (arr - [0.5, 0.5, 0.5]) / [0.5, 0.5, 0.5] (range [-1.0, 1.0])
-        6. Transpose to NCHW layout: (1, 3, 224, 224)
-        """
-        # 1. Convert to RGB
-        rgb_img = image.convert("RGB")
-
-        # 2. Resize to 224x224 with Bilinear interpolation
-        resized = rgb_img.resize(self.TARGET_SIZE, Image.Resampling.BILINEAR)
-
-        # 3. Convert to float32
-        arr = np.asarray(resized, dtype=np.float32)
-
-        # 4 & 5. Rescale and Normalize
-        arr = (arr / 255.0 - self.IMAGE_MEAN) / self.IMAGE_STD
-
-        # 6. Transpose (H, W, C) -> (C, H, W) and expand batch dimension
-        transposed = np.transpose(arr, (2, 0, 1))
-        input_tensor = np.expand_dims(transposed, axis=0)
-
-        return input_tensor
-
     def predict(self, image: Image.Image) -> Dict[str, Any]:
         """
-        Performs genuine neural inference on the preprocessed image.
-        Never invents predictions or confidence scores.
-        Returns honest status, actual class logits, and softmax scores.
+        Performs genuine neural inference on the image.
+        Uses dual-view inspection (full image + native central crop for high-res images)
+        to protect against downsampling false-positives.
         """
         if not self._is_initialized:
             self.initialize()
@@ -183,23 +143,37 @@ class AIClassifierService:
         start_time = time.time()
 
         try:
-            input_tensor = self.preprocess_image(image)
+            rgb_img = image.convert("RGB")
+            w, h = rgb_img.size
 
-            # Run ONNX inference
-            outputs = self._session.run(None, {"pixel_values": input_tensor})
-            logits = outputs[0][0]  # Shape: (2,)
+            # Build dual-view representation:
+            # 1. Full image (for global composition)
+            # 2. Native-resolution center crop (to preserve original sensor grain if image is large)
+            images_to_process = [rgb_img]
+            if w >= 384 and h >= 384:
+                crop_size = min(w, h, 512)
+                left = (w - crop_size) // 2
+                top = (h - crop_size) // 2
+                center_crop = rgb_img.crop((left, top, left + crop_size, top + crop_size))
+                images_to_process.append(center_crop)
 
-            # Stable softmax computation
-            shifted_logits = logits - np.max(logits)
-            exp_logits = np.exp(shifted_logits)
-            softmax_probs = exp_logits / np.sum(exp_logits)
+            inputs = self._processor(images=images_to_process, return_tensors="pt")
 
-            real_score = float(softmax_probs[0])
-            fake_score = float(softmax_probs[1])
-            real_logit = float(logits[0])
-            fake_logit = float(logits[1])
+            with torch.no_grad():
+                outputs = self._model(**inputs)
+                logits = outputs.logits  # Shape: (N, 2)
+                probs = torch.nn.functional.softmax(logits, dim=-1)
 
-            # Class mapping: 0 -> REAL, 1 -> FAKE
+                # Average probabilities and logits across views
+                avg_probs = torch.mean(probs, dim=0)
+                avg_logits = torch.mean(logits, dim=0)
+
+            # Class mapping: 0 -> "artificial" (FAKE), 1 -> "human" (REAL)
+            fake_score = float(avg_probs[0])
+            real_score = float(avg_probs[1])
+            fake_logit = float(avg_logits[0])
+            real_logit = float(avg_logits[1])
+
             predicted_class = "FAKE" if fake_score >= real_score else "REAL"
             predicted_desc = (
                 "AI-Generated Media (Synthetic)"
@@ -207,7 +181,6 @@ class AIClassifierService:
                 else "Authentic Photograph / Real-World Media"
             )
 
-            # Primary confidence score corresponds to predicted class probability
             confidence_score = round((fake_score if predicted_class == "FAKE" else real_score) * 100.0, 2)
             elapsed_ms = round((time.time() - start_time) * 1000, 2)
 

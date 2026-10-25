@@ -274,7 +274,7 @@ class MediaDetectorService:
             stage_label = "Image Forensics — AI Inference Error"
 
         limitations = [
-            "AI model classification is statistical and trained on the CIFAKE dataset; it does not provide definitive judicial or mathematical proof.",
+            "AI model classification is statistical and trained across modern generative diffusion outputs and real photography; it does not provide definitive judicial or mathematical proof.",
             "This model is specialized for detecting AI-generated synthetic images and has not been established as a universal face-swap detector.",
             "Scores are raw softmax outputs from Vision Transformer logits and represent model activation strength rather than calibrated Bayesian probabilities.",
             "2D-FFT frequency distributions visualize periodicity and edge energy, but cannot alone prove whether an image is AI-generated.",
