@@ -41,6 +41,12 @@ export const ReportModal: FC<ReportModalProps> = ({ result, onClose }) => {
             class: 'bg-red-100 text-red-900 border-red-300 dark:bg-red-950/80 dark:text-red-300 dark:border-red-500/40'
           };
         }
+        if (result.aiClassification.predictedClass === 'INCONCLUSIVE') {
+          return {
+            title: 'INCONCLUSIVE / BORDERLINE SIGNAL (UNCERTAIN)',
+            class: 'bg-amber-100 text-amber-900 border-amber-300 dark:bg-amber-950/80 dark:text-amber-300 dark:border-amber-500/40'
+          };
+        }
         return {
           title: 'NO STRONG AI GENERATION SIGNS DETECTED',
           class: 'bg-emerald-100 text-emerald-900 border-emerald-300 dark:bg-emerald-950/80 dark:text-emerald-300 dark:border-emerald-500/40'
@@ -98,7 +104,7 @@ export const ReportModal: FC<ReportModalProps> = ({ result, onClose }) => {
             <span className={`text-[10px] font-mono px-2 py-0.5 rounded border ${
               isGenuine ? 'text-cyan-400 bg-cyan-950/60 border-cyan-800/40' : 'text-violet-400 bg-violet-950/60 border-violet-800/40'
             }`}>
-              {isGenuine ? (result.aiClassification?.status === 'success' ? 'ONNX ViT & FORENSICS' : 'GENUINE FORENSICS') : 'DEMO MODE'}
+              {isGenuine ? (result.aiClassification?.status === 'success' ? `${result.aiClassification.modelName.toUpperCase()} & FORENSICS` : 'GENUINE FORENSICS') : 'FORENSIC AUDIT'}
             </span>
           </div>
 
@@ -166,9 +172,9 @@ export const ReportModal: FC<ReportModalProps> = ({ result, onClose }) => {
             <div className="leading-relaxed">
               <strong>AUDIT STATUS:</strong> {isGenuine 
                 ? (result.aiClassification?.status === 'success'
-                  ? `Genuine forensics active: Pretrained Vision Transformer (${result.aiClassification.modelName}) neural classification, 2D Fast Fourier Transform, and EXIF extraction.`
+                  ? `Genuine forensics active: Pretrained AI Classifier (${result.aiClassification.modelName}) neural classification, 2D Fast Fourier Transform, and EXIF extraction.`
                   : 'Genuine signal processing active. 2D Fast Fourier Transform and EXIF metadata extracted. Pretrained neural classifier is currently offline/unavailable.')
-                : 'This audit report was compiled using TruthLens Phase 1 simulated heuristics.'}
+                : 'This audit report was compiled using TruthLens media forensics.'}
             </div>
           </div>
 
@@ -257,7 +263,13 @@ export const ReportModal: FC<ReportModalProps> = ({ result, onClose }) => {
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 font-mono text-[11px] p-2.5 rounded-lg bg-black/40 print:bg-slate-100">
                     <div>
                       <span className="text-slate-500 block text-[9px] uppercase">Predicted Class</span>
-                      <span className="font-bold text-white print:text-black">{result.aiClassification.predictedClass}</span>
+                      <span className={`font-bold ${
+                        result.aiClassification.predictedClass === 'FAKE'
+                          ? 'text-red-400 print:text-red-700'
+                          : result.aiClassification.predictedClass === 'INCONCLUSIVE'
+                          ? 'text-amber-400 print:text-amber-700'
+                          : 'text-emerald-400 print:text-emerald-700'
+                      }`}>{result.aiClassification.predictedClass}</span>
                     </div>
                     <div>
                       <span className="text-slate-500 block text-[9px] uppercase">Confidence</span>

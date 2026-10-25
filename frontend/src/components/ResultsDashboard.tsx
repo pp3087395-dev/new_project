@@ -31,89 +31,108 @@ export const ResultsDashboard: FC<ResultsDashboardProps> = ({
     result.evidence.length > 0 ? result.evidence[0] : null
   );
 
-  const isGenuineForensics = result.mode === 'genuine_signal_processing';
 
   const getStatusBadge = () => {
-    if (isGenuineForensics) {
-      if (result.aiClassification && result.aiClassification.status === 'success') {
-        if (result.aiClassification.predictedClass === 'FAKE') {
-          return {
-            label: 'AI-GENERATED MEDIA PATTERNS DETECTED',
-            badgeText: 'PRETRAINED ONNX CLASSIFIER',
-            icon: AlertTriangle,
-            textColor: 'text-red-300',
-            bgColor: 'bg-red-950/70',
-            borderColor: 'border-red-500/50',
-            glowColor: 'shadow-red-500/20'
-          };
-        }
-        return {
-          label: 'NO STRONG AI-GENERATION SIGNS DETECTED',
-          badgeText: 'PRETRAINED ONNX CLASSIFIER',
-          icon: CheckCircle2,
-          textColor: 'text-emerald-300',
-          bgColor: 'bg-emerald-950/70',
-          borderColor: 'border-emerald-500/50',
-          glowColor: 'shadow-emerald-500/20'
-        };
-      }
+    const activeModelName = result.aiClassification?.modelName?.toUpperCase() || 'AI FORENSIC CLASSIFIER';
 
-      if (result.aiClassification && result.aiClassification.status !== 'success') {
+    if (result.aiClassification && result.aiClassification.status === 'success') {
+      const pred = result.aiClassification.predictedClass;
+      if (pred === 'FAKE') {
         return {
-          label: 'AI MODEL UNAVAILABLE — SIGNAL FORENSICS ONLY',
-          badgeText: 'GENUINE SIGNAL PROCESSING',
-          icon: HelpCircle,
-          textColor: 'text-amber-300',
-          bgColor: 'bg-amber-950/70',
-          borderColor: 'border-amber-500/50',
-          glowColor: 'shadow-amber-500/20'
-        };
-      }
-
-      return {
-        label: 'IMAGE FORENSICS — SIGNAL PROCESSING ACTIVE',
-        badgeText: 'GENUINE SIGNAL PROCESSING',
-        icon: Activity,
-        textColor: 'text-cyan-300',
-        bgColor: 'bg-cyan-950/40',
-        borderColor: 'border-cyan-500/50',
-        glowColor: 'shadow-cyan-500/10'
-      };
-    }
-
-    switch (result.resultCategory) {
-      case 'potentially_manipulated':
-        return {
-          label: 'DEMO MODE: Potentially Manipulated',
-          badgeText: 'SIMULATED VERDICT',
+          label: 'AI-GENERATED MEDIA PATTERNS DETECTED',
+          badgeText: activeModelName,
           icon: AlertTriangle,
           textColor: 'text-red-300',
           bgColor: 'bg-red-950/70',
           borderColor: 'border-red-500/50',
           glowColor: 'shadow-red-500/20'
         };
-      case 'no_strong_signs':
+      }
+      if (pred === 'INCONCLUSIVE') {
+        const fakeProb = result.aiClassification.scores?.FAKE !== undefined
+          ? (result.aiClassification.scores.FAKE * 100).toFixed(1)
+          : (result.confidenceScore != null ? result.confidenceScore.toFixed(1) : '50.0');
         return {
-          label: 'DEMO MODE: No Strong Signs Detected',
-          badgeText: 'SIMULATED VERDICT',
-          icon: CheckCircle2,
-          textColor: 'text-emerald-300',
-          bgColor: 'bg-emerald-950/70',
-          borderColor: 'border-emerald-500/50',
-          glowColor: 'shadow-emerald-500/20'
-        };
-      case 'inconclusive':
-      default:
-        return {
-          label: 'DEMO MODE: Inconclusive Analysis',
-          badgeText: 'SIMULATED VERDICT',
+          label: 'INCONCLUSIVE / BORDERLINE SIGNAL DETECTED',
+          badgeText: `INCONCLUSIVE (AI probability: ${fakeProb}%)`,
           icon: HelpCircle,
           textColor: 'text-amber-300',
           bgColor: 'bg-amber-950/70',
           borderColor: 'border-amber-500/50',
           glowColor: 'shadow-amber-500/20'
         };
+      }
+      return {
+        label: 'NO STRONG AI-GENERATION SIGNS DETECTED',
+        badgeText: activeModelName,
+        icon: CheckCircle2,
+        textColor: 'text-emerald-300',
+        bgColor: 'bg-emerald-950/70',
+        borderColor: 'border-emerald-500/50',
+        glowColor: 'shadow-emerald-500/20'
+      };
     }
+
+    if (result.aiClassification && result.aiClassification.status !== 'success') {
+      return {
+        label: 'AI MODEL UNAVAILABLE — SIGNAL FORENSICS ONLY',
+        badgeText: 'GENUINE SIGNAL PROCESSING',
+        icon: HelpCircle,
+        textColor: 'text-amber-300',
+        bgColor: 'bg-amber-950/70',
+        borderColor: 'border-amber-500/50',
+        glowColor: 'shadow-amber-500/20'
+      };
+    }
+
+    if (result.resultCategory === 'potentially_manipulated') {
+      return {
+        label: 'AI-GENERATED MEDIA PATTERNS DETECTED',
+        badgeText: activeModelName,
+        icon: AlertTriangle,
+        textColor: 'text-red-300',
+        bgColor: 'bg-red-950/70',
+        borderColor: 'border-red-500/50',
+        glowColor: 'shadow-red-500/20'
+      };
+    }
+
+    if (result.resultCategory === 'no_strong_signs') {
+      return {
+        label: 'NO STRONG AI-GENERATION SIGNS DETECTED',
+        badgeText: activeModelName,
+        icon: CheckCircle2,
+        textColor: 'text-emerald-300',
+        bgColor: 'bg-emerald-950/70',
+        borderColor: 'border-emerald-500/50',
+        glowColor: 'shadow-emerald-500/20'
+      };
+    }
+
+    if (result.resultCategory === 'inconclusive') {
+      const fakeProb = result.aiClassification?.scores?.FAKE !== undefined
+        ? (result.aiClassification.scores.FAKE * 100).toFixed(1)
+        : (result.confidenceScore != null ? result.confidenceScore.toFixed(1) : '50.0');
+      return {
+        label: 'INCONCLUSIVE / BORDERLINE SIGNAL DETECTED',
+        badgeText: `INCONCLUSIVE (AI probability: ${fakeProb}%)`,
+        icon: HelpCircle,
+        textColor: 'text-amber-300',
+        bgColor: 'bg-amber-950/70',
+        borderColor: 'border-amber-500/50',
+        glowColor: 'shadow-amber-500/20'
+      };
+    }
+
+    return {
+      label: 'IMAGE FORENSICS — SIGNAL PROCESSING ACTIVE',
+      badgeText: 'GENUINE SIGNAL PROCESSING',
+      icon: Activity,
+      textColor: 'text-cyan-300',
+      bgColor: 'bg-cyan-950/40',
+      borderColor: 'border-cyan-500/50',
+      glowColor: 'shadow-cyan-500/10'
+    };
   };
 
   const status = getStatusBadge();
@@ -162,15 +181,11 @@ export const ResultsDashboard: FC<ResultsDashboardProps> = ({
               <span className="text-xs font-mono text-slate-400 bg-black/30 px-2.5 py-1 rounded border border-slate-700">
                 REF: {result.id}
               </span>
-              <span className={`text-xs font-mono px-2 py-1 rounded border flex items-center gap-1 ${
-                isGenuineForensics 
-                  ? 'text-cyan-300 bg-cyan-950/60 border-cyan-800/40' 
-                  : 'text-violet-300 bg-violet-950/60 border-violet-800/40'
-              }`}>
+              <span className="text-xs font-mono px-2 py-1 rounded border flex items-center gap-1 text-cyan-300 bg-cyan-950/60 border-cyan-800/40">
                 <Sparkles className="w-3 h-3 text-cyan-400" />
-                {isGenuineForensics 
-                  ? (result.aiClassification?.status === 'success' ? 'Real ViT ONNX & 2D-FFT' : 'Real 2D-FFT & Metadata') 
-                  : 'Simulated Preset Heuristics'}
+                {result.aiClassification?.status === 'success' 
+                  ? `${result.aiClassification.modelName} & 2D-FFT` 
+                  : 'Real 2D-FFT & Metadata'}
               </span>
             </div>
 
@@ -179,19 +194,19 @@ export const ResultsDashboard: FC<ResultsDashboardProps> = ({
             </h1>
 
             <p className="text-slate-300 text-xs sm:text-sm max-w-2xl leading-relaxed">
-              {isGenuineForensics ? (
-                result.aiClassification && result.aiClassification.status === 'success' ? (
+              {result.aiClassification && result.aiClassification.status === 'success' ? (
+                result.aiClassification.predictedClass === 'INCONCLUSIVE' ? (
                   <span>
-                    The image was processed through the pretrained <strong>{result.aiClassification.modelName}</strong> ({result.aiClassification.modelId}) via ONNX Runtime on CPU, alongside mathematical <strong>2D Fast Fourier Transform (FFT) log-magnitude spectrum</strong> and EXIF provenance extraction.
+                    The model cannot reliably distinguish this image from authentic photography. Additional manual verification is required. Evaluated by <strong>{result.aiClassification.modelName}</strong> ({result.aiClassification.modelId}) on CPU alongside 2D-FFT frequency analysis.
                   </span>
                 ) : (
                   <span>
-                    The image was processed through Python/NumPy to calculate its actual <strong>2D Fast Fourier Transform (FFT) log-magnitude spectrum</strong> and extract embedded EXIF headers. The neural classifier is currently unavailable ({result.aiClassification?.errorMessage || 'not initialized'}).
+                    The image was processed through the pretrained <strong>{result.aiClassification.modelName}</strong> ({result.aiClassification.modelId}) on CPU, alongside mathematical <strong>2D Fast Fourier Transform (FFT) log-magnitude spectrum</strong> and EXIF provenance extraction.
                   </span>
                 )
               ) : (
                 <span>
-                  This record was generated in demonstration mode using illustrative heuristic presets.
+                  The image was processed through Python/NumPy to calculate its actual <strong>2D Fast Fourier Transform (FFT) log-magnitude spectrum</strong> and extract embedded EXIF headers. The neural classifier is currently unavailable ({result.aiClassification?.errorMessage || 'not initialized'}).
                 </span>
               )}
             </p>
@@ -200,12 +215,18 @@ export const ResultsDashboard: FC<ResultsDashboardProps> = ({
           {/* Confidence Score Pill */}
           <div className="shrink-0 p-5 rounded-2xl bg-black/50 border border-slate-800 min-w-[220px] text-center">
             <div className="text-[11px] font-mono text-slate-400 uppercase tracking-wider mb-1">
-              {isGenuineForensics ? 'AI ViT Classification' : 'Demo Classification'}
+              AI Model Classification
             </div>
             {result.aiClassification && result.aiClassification.status === 'success' ? (
               <div>
-                <div className="text-2xl font-extrabold text-white font-heading tracking-tight flex items-center justify-center gap-1.5">
-                  <span className={result.aiClassification.predictedClass === 'FAKE' ? 'text-red-400' : 'text-emerald-400'}>
+                <div className="text-2xl font-extrabold font-heading tracking-tight flex items-center justify-center gap-1.5">
+                  <span className={
+                    result.aiClassification.predictedClass === 'FAKE'
+                      ? 'text-red-400'
+                      : result.aiClassification.predictedClass === 'INCONCLUSIVE'
+                      ? 'text-amber-400'
+                      : 'text-emerald-400'
+                  }>
                     {result.aiClassification.predictedClass}
                   </span>
                   <span className="text-lg text-slate-300 font-mono">
@@ -222,16 +243,16 @@ export const ResultsDashboard: FC<ResultsDashboardProps> = ({
                   {result.confidenceScore.toFixed(1)}%
                 </div>
                 <div className="text-[10px] text-slate-400 mt-1 max-w-[170px] mx-auto leading-tight">
-                  Demonstration test weight score.
+                  Forensic Signal Activation
                 </div>
               </div>
             ) : (
               <div>
                 <div className="text-xl font-bold text-amber-400 font-heading">
-                  UNAVAILABLE
+                  WITHHELD
                 </div>
                 <div className="text-[10px] text-amber-300/80 mt-1 max-w-[170px] mx-auto leading-tight">
-                  {result.aiClassification?.errorMessage ? 'Engine offline. Fake scores withheld.' : 'Model not connected.'}
+                  {result.aiClassification?.errorMessage ? 'AI classifier offline.' : 'Model not connected.'}
                 </div>
               </div>
             )}
@@ -249,7 +270,7 @@ export const ResultsDashboard: FC<ResultsDashboardProps> = ({
               </div>
               <div>
                 <div className="text-xs font-mono font-bold uppercase tracking-wider text-slate-400">
-                  Pretrained Neural Classifier (ONNX Runtime CPU)
+                  Pretrained Neural Classifier (CPU)
                 </div>
                 <h3 className="text-base sm:text-lg font-bold text-white font-heading">
                   {result.aiClassification.modelName}
@@ -281,12 +302,16 @@ export const ResultsDashboard: FC<ResultsDashboardProps> = ({
                     <span className={`text-2xl font-extrabold font-mono px-3 py-1 rounded-xl border ${
                       result.aiClassification.predictedClass === 'FAKE'
                         ? 'text-red-300 bg-red-950/60 border-red-500/40'
+                        : result.aiClassification.predictedClass === 'INCONCLUSIVE'
+                        ? 'text-amber-300 bg-amber-950/60 border-amber-500/40'
                         : 'text-emerald-300 bg-emerald-950/60 border-emerald-500/40'
                     }`}>
                       {result.aiClassification.predictedClass}
                     </span>
                     <span className="text-xs text-slate-300 font-medium">
-                      {result.aiClassification.predictedLabelDescription}
+                      {result.aiClassification.predictedClass === 'INCONCLUSIVE'
+                        ? 'The model cannot reliably distinguish this image from authentic photography. Additional manual verification is required.'
+                        : (result.aiClassification.predictedLabelDescription || '')}
                     </span>
                   </div>
                   {result.aiClassification.inferenceTimeMs !== null && (
@@ -299,10 +324,10 @@ export const ResultsDashboard: FC<ResultsDashboardProps> = ({
                 <div className="md:col-span-7 space-y-3 bg-black/40 p-4 rounded-xl border border-slate-800">
                   <div className="flex justify-between items-center text-xs font-mono">
                     <span className="text-red-400 font-semibold">
-                      FAKE (AI-Generated): {result.aiClassification.scores?.FAKE ? (result.aiClassification.scores.FAKE * 100).toFixed(2) : 0}%
+                      FAKE (AI-Generated): {result.aiClassification.scores?.FAKE !== undefined ? (result.aiClassification.scores.FAKE * 100).toFixed(2) : 0}%
                     </span>
                     <span className="text-emerald-400 font-semibold">
-                      REAL (Authentic): {result.aiClassification.scores?.REAL ? (result.aiClassification.scores.REAL * 100).toFixed(2) : 0}%
+                      REAL (Authentic): {result.aiClassification.scores?.REAL !== undefined ? (result.aiClassification.scores.REAL * 100).toFixed(2) : 0}%
                     </span>
                   </div>
 
@@ -311,20 +336,30 @@ export const ResultsDashboard: FC<ResultsDashboardProps> = ({
                     <div
                       className="bg-gradient-to-r from-red-600 to-rose-500 h-full transition-all duration-500"
                       style={{ width: `${(result.aiClassification.scores?.FAKE || 0) * 100}%` }}
-                      title={`Fake Score: ${(result.aiClassification.scores?.FAKE || 0) * 100}%`}
+                      title={`Fake Score: ${((result.aiClassification.scores?.FAKE || 0) * 100).toFixed(2)}%`}
                     />
                     <div
                       className="bg-gradient-to-r from-emerald-500 to-teal-400 h-full transition-all duration-500"
                       style={{ width: `${(result.aiClassification.scores?.REAL || 0) * 100}%` }}
-                      title={`Real Score: ${(result.aiClassification.scores?.REAL || 0) * 100}%`}
+                      title={`Real Score: ${((result.aiClassification.scores?.REAL || 0) * 100).toFixed(2)}%`}
                     />
+                  </div>
+
+                  {/* Decision Cutoff & Uncertain Band */}
+                  <div className="text-[11px] font-mono text-slate-400 flex flex-wrap justify-between pt-1 border-t border-slate-800/80 gap-2">
+                    <span>
+                      Decision Cutoff: <strong className="text-slate-200">{((result.aiClassification.decisionThreshold ?? 0.50) * 100).toFixed(0)}%</strong>
+                    </span>
+                    <span>
+                      Inconclusive Band: <strong className="text-amber-400">±{((result.aiClassification.uncertainBand ?? 0.10) * 100).toFixed(0)}%</strong> ({(((result.aiClassification.decisionThreshold ?? 0.50) - (result.aiClassification.uncertainBand ?? 0.10)) * 100).toFixed(0)}%–{(((result.aiClassification.decisionThreshold ?? 0.50) + (result.aiClassification.uncertainBand ?? 0.10)) * 100).toFixed(0)}%)
+                    </span>
                   </div>
 
                   {/* Raw Logits */}
                   {result.aiClassification.rawLogits && (
-                    <div className="text-[10px] font-mono text-slate-500 flex justify-between pt-1">
-                      <span>Raw ViT Logit (Fake): {result.aiClassification.rawLogits.FAKE}</span>
-                      <span>Raw ViT Logit (Real): {result.aiClassification.rawLogits.REAL}</span>
+                    <div className="text-[10px] font-mono text-slate-500 flex justify-between pt-0.5">
+                      <span>Raw Model Logit (Fake): {result.aiClassification.rawLogits.FAKE}</span>
+                      <span>Raw Model Logit (Real): {result.aiClassification.rawLogits.REAL}</span>
                     </div>
                   )}
                 </div>
@@ -354,13 +389,21 @@ export const ResultsDashboard: FC<ResultsDashboardProps> = ({
               </div>
             </div>
           ) : (
-            <div className="p-4 rounded-xl bg-amber-950/30 border border-amber-500/40 text-amber-300 text-xs space-y-2">
-              <div className="font-bold font-mono text-sm flex items-center gap-2">
-                <AlertTriangle className="w-4 h-4 text-amber-400" />
-                <span>AI Inference Engine Offline / Unavailable</span>
+            <div className="p-5 rounded-xl bg-amber-950/30 border border-amber-500/40 text-amber-300 text-xs space-y-3">
+              <div className="font-bold font-mono text-sm flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 text-amber-400" />
+                  <span>AI Inference Engine Offline / Unavailable</span>
+                </div>
+                <button
+                  onClick={onNewAnalysis}
+                  className="px-3 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-200 text-xs font-mono font-medium transition-colors cursor-pointer"
+                >
+                  Retry Analysis
+                </button>
               </div>
               <p className="text-slate-300 text-xs leading-relaxed">
-                {result.aiClassification.errorMessage || 'Could not load model weights.'}
+                {result.aiClassification.errorMessage || 'Could not load model weights or neural backend is initializing.'}
               </p>
               <div className="text-[11px] text-amber-400/90 font-mono">
                 TruthLens maintains integrity: no synthetic or mock scores were fabricated. Deterministic 2D-FFT and metadata inspection remain active below.
