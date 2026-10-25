@@ -270,12 +270,17 @@ export const analysisService = {
         summary: summaryText,
         evidence,
         metadataAnalysis: {
-          dimensions: backendData.metadata_analysis.dimensions,
+          dimensions: {
+            width: dimensions.width,
+            height: dimensions.height,
+            aspectRatio: dimensions.aspect_ratio || `${dimensions.width}:${dimensions.height}`,
+            totalPixels: dimensions.total_pixels ?? (dimensions.width * dimensions.height),
+          },
           format: backendData.metadata_analysis.format,
           colorMode: backendData.metadata_analysis.color_mode,
           hasExif: backendData.metadata_analysis.has_exif,
-          exifData: backendData.metadata_analysis.exif_data,
-          missingMetadata: backendData.metadata_analysis.missing_metadata
+          exifData: backendData.metadata_analysis.exif_data || {},
+          missingMetadata: backendData.metadata_analysis.missing_metadata || []
         },
         frequencyAnalysis: {
           method: backendData.frequency_analysis.method,
