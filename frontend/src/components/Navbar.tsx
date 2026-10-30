@@ -9,7 +9,7 @@ import {
   Menu, 
   X, 
   Info,
-  Sparkles
+  Activity
 } from 'lucide-react';
 
 interface NavbarProps {
@@ -90,27 +90,27 @@ export const Navbar: FC<NavbarProps> = ({
 
         {/* Right Action & Demo Badge */}
         <div className="hidden lg:flex items-center gap-4">
-          {/* Demo Mode Badge */}
+          {/* Forensic Engine Badge */}
           <div className="relative">
             <button
               onMouseEnter={() => setShowDemoTooltip(true)}
               onMouseLeave={() => setShowDemoTooltip(false)}
               onClick={() => setShowDemoTooltip(!showDemoTooltip)}
-              className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono font-medium bg-violet-950/50 text-violet-300 border border-violet-800/40 hover:border-violet-600 transition-colors cursor-pointer"
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono font-medium bg-cyan-950/50 text-cyan-300 border border-cyan-800/40 hover:border-cyan-600 transition-colors cursor-pointer"
             >
-              <Sparkles className="w-3.5 h-3.5 text-violet-400" />
-              <span>DEMO MODE</span>
-              <Info className="w-3 h-3 text-violet-400 ml-0.5" />
+              <Activity className="w-3.5 h-3.5 text-cyan-400" />
+              <span>FORENSIC ENGINE</span>
+              <Info className="w-3 h-3 text-cyan-400 ml-0.5" />
             </button>
 
             {showDemoTooltip && (
-              <div className="absolute right-0 top-full mt-2 w-72 p-3 rounded-xl bg-slate-900 border border-violet-500/30 text-xs text-slate-300 shadow-xl z-50 backdrop-blur-lg">
+              <div className="absolute right-0 top-full mt-2 w-72 p-3 rounded-xl bg-slate-900 border border-cyan-500/30 text-xs text-slate-300 shadow-xl z-50 backdrop-blur-lg">
                 <div className="font-semibold text-white mb-1 flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-violet-400"></span>
-                  Demonstration Heuristics Active
+                  <span className="w-2 h-2 rounded-full bg-cyan-400"></span>
+                  Genuine Signal Processing Active
                 </div>
                 <p className="text-slate-300 leading-relaxed text-[11px]">
-                  During Phase 1, detection results use explainable heuristic simulation. In Phase 2, this switches to FastAPI + ONNX/Deepfake pretrained inference.
+                  Deterministic 2D-FFT frequency spectrum analysis, EXIF provenance extraction, and backend deepfake neural classification.
                 </p>
               </div>
             )}
@@ -146,10 +146,10 @@ export const Navbar: FC<NavbarProps> = ({
       {mobileMenuOpen && (
         <div className="md:hidden border-b border-slate-800 bg-[#0B0F19] px-4 pt-3 pb-5 space-y-2">
           <div className="flex items-center justify-between pb-2 border-b border-slate-800/80 mb-2">
-            <span className="text-xs font-mono text-violet-400 flex items-center gap-1">
-              <Sparkles className="w-3.5 h-3.5" /> DEMO MODE ACTIVE
+            <span className="text-xs font-mono text-cyan-400 flex items-center gap-1">
+              <Activity className="w-3.5 h-3.5" /> FORENSIC ENGINE ACTIVE
             </span>
-            <span className="text-[11px] text-slate-400">Phase 1 Prototype</span>
+            <span className="text-[11px] text-slate-400">Signal + Neural</span>
           </div>
 
           {navItems.map((item) => {

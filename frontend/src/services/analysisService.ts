@@ -42,21 +42,100 @@ export const SAMPLE_DATASETS: SampleMedia[] = [
 
 export const analysisService = {
   getBackendUrl(): string {
-    return import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000';
+    const envUrl = import.meta.env.VITE_API_BASE_URL;
+    if (envUrl && typeof envUrl === 'string' && envUrl.trim().length > 0) {
+      return envUrl.replace(/\/+$/, '');
+    }
+    return 'http://127.0.0.1:8000';
   },
 
-  async checkBackendHealth(): Promise<{ isOnline: boolean; details?: any }> {
+  /**
+   * Fast lightweight ping probe.
+   * Resolves immediately to check if the server is awake without waiting for model weights.
+   */
+  async ping(timeoutMs = 4000): Promise<boolean> {
+    try {
+      const url = `${this.getBackendUrl()}/api/ping`;
+      const res = await fetch(url, { signal: AbortSignal.timeout(timeoutMs) });
+      if (res.ok) {
+        const data = await res.json().catch(() => ({}));
+        return !!data.ok;
+      }
+      return false;
+    } catch {
+      return false;
+    }
+  },
+
+  /**
+   * Comprehensive health check.
+   * Reports server status, model loading progress ('loading' | 'ready' | 'error'), and active model name.
+   */
+  async checkBackendHealth(timeoutMs = 4000): Promise<{
+    isOnline: boolean;
+    modelStatus: 'ready' | 'loading' | 'error' | 'unavailable' | 'unknown';
+    modelName?: string;
+    details?: any;
+    error?: string;
+  }> {
     try {
       const url = `${this.getBackendUrl()}/api/health`;
-      const res = await fetch(url, { signal: AbortSignal.timeout(3000) });
+      const res = await fetch(url, { signal: AbortSignal.timeout(timeoutMs) });
       if (res.ok) {
         const data = await res.json();
-        return { isOnline: true, details: data };
+        return {
+          isOnline: true,
+          modelStatus: data.ai_model_status || (data.ai_model_connected ? 'ready' : 'unavailable'),
+          modelName: data.ai_model_name,
+          details: data,
+          error: data.ai_model_error || undefined,
+        };
       }
-      return { isOnline: false };
-    } catch {
-      return { isOnline: false };
+      return { isOnline: false, modelStatus: 'unknown' };
+    } catch (e: any) {
+      return { isOnline: false, modelStatus: 'unknown', error: e.message };
     }
+  },
+
+  /**
+   * Generates a downscaled JPEG data-URL thumbnail (max 320px) on the client canvas.
+   * Replaces ephemeral URL.createObjectURL(file) blob URLs that expire upon session/reload,
+   * ensuring history and dashboard previews persist indefinitely without localStorage overflow.
+   */
+  async createDownscaledThumbnail(file: File, maxDim = 320): Promise<string> {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          let w = img.width;
+          let h = img.height;
+          if (w > maxDim || h > maxDim) {
+            if (w > h) {
+              h = Math.round((h * maxDim) / w);
+              w = maxDim;
+            } else {
+              w = Math.round((w * maxDim) / h);
+              h = maxDim;
+            }
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = Math.max(1, w);
+          canvas.height = Math.max(1, h);
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            ctx.drawImage(img, 0, 0, w, h);
+            resolve(canvas.toDataURL('image/jpeg', 0.82));
+          } else {
+            resolve((e.target?.result as string) || '');
+          }
+        };
+        img.onerror = () => resolve((e.target?.result as string) || '');
+        img.src = (e.target?.result as string) || '';
+      };
+      reader.onerror = () => resolve('');
+      reader.readAsDataURL(file);
+    });
   },
 
   /**
@@ -75,7 +154,7 @@ export const analysisService = {
     // -------------------------------------------------------------
     if (!isSample && file instanceof File) {
       const backendUrl = this.getBackendUrl();
-      const mediaUrl = URL.createObjectURL(file);
+      const mediaUrl = await this.createDownscaledThumbnail(file, 320);
       const isVideo = file.type.startsWith('video') || file.name.match(/\.(mp4|mov|webm)$/i) !== null;
 
       if (isVideo) {
@@ -85,7 +164,7 @@ export const analysisService = {
       if (onProgress) onProgress(20, 'Reading file bytes and computing client-side integrity check...');
       await new Promise(r => setTimeout(r, 200));
 
-      if (onProgress) onProgress(45, 'Sending image to TruthLens FastAPI backend via multipart/form-data...');
+      if (onProgress) onProgress(45, 'Sending image to TruthLens backend (first analysis after a cold start can take longer)...');
 
       const formData = new FormData();
       formData.append('file', file);
@@ -95,10 +174,14 @@ export const analysisService = {
         response = await fetch(`${backendUrl}/api/analyze/image`, {
           method: 'POST',
           body: formData,
+          signal: AbortSignal.timeout(120000), // 120-second timeout for CPU inference & cold starts
         });
       } catch (networkErr: any) {
+        if (networkErr.name === 'TimeoutError') {
+          throw new Error('Analysis timed out after 120 seconds. The server may be experiencing high CPU load or a cold start.');
+        }
         throw new Error(
-          `Unable to connect to TruthLens backend at ${backendUrl}. Please ensure FastAPI is running via 'python app/main.py'.`
+          `Unable to connect to TruthLens backend at ${backendUrl}. Please ensure the server is running and reachable.`
         );
       }
 
@@ -131,12 +214,25 @@ export const analysisService = {
         predictedClass: rawAi.predicted_class,
         predictedLabelDescription: rawAi.predicted_label_description,
         confidenceScore: rawAi.confidence_score,
+        decisionThreshold: rawAi.decision_threshold,
+        uncertainBand: rawAi.uncertain_band,
         scores: rawAi.scores,
         rawLogits: rawAi.raw_logits,
         calibrationStatement: rawAi.calibration_statement,
         scopeLimitation: rawAi.scope_limitation,
         inferenceTimeMs: rawAi.inference_time_ms,
         errorMessage: rawAi.error_message
+      } : undefined;
+
+      const rawProv = backendData.provenance;
+      const provenance = rawProv ? {
+        aiSourceDeclared: Boolean(rawProv.ai_source_declared),
+        declaredSourceType: rawProv.declared_source_type || null,
+        toolStrings: rawProv.tool_strings || [],
+        c2paPresent: Boolean(rawProv.c2pa_present),
+        c2paVerified: rawProv.c2pa_verified,
+        watermarkMatch: rawProv.watermark_match || null,
+        notes: rawProv.notes || []
       } : undefined;
 
       let resultCategory: ResultCategory = 'forensic_signal_analysis';
@@ -148,9 +244,14 @@ export const analysisService = {
           resultCategory = 'potentially_manipulated';
         } else if (aiClassification.predictedClass === 'REAL') {
           resultCategory = 'no_strong_signs';
+        } else if (aiClassification.predictedClass === 'INCONCLUSIVE') {
+          resultCategory = 'inconclusive';
         }
         confidenceScore = aiClassification.confidenceScore ?? null;
-        confidenceRationale = `Vision Transformer Classification: Predicted ${aiClassification.predictedClass} with ${confidenceScore}% model activation. Note: scores represent softmax relative output strength and are not calibrated Bayesian probabilities.`;
+        const displayClass = aiClassification.predictedClass === 'FAKE'
+          ? 'Likely fully AI-generated'
+          : (aiClassification.predictedClass === 'REAL' ? 'No signs of full AI generation' : 'Inconclusive');
+        confidenceRationale = `AI Classification: ${displayClass} (${confidenceScore}% model activation). ${aiClassification.predictedLabelDescription || ''}`;
       } else if (aiClassification && aiClassification.status === 'unavailable') {
         resultCategory = 'forensic_signal_analysis';
         confidenceScore = null;
@@ -172,14 +273,16 @@ export const analysisService = {
       if (aiClassification && aiClassification.status === 'success') {
         const fakePct = aiClassification.scores?.FAKE ? (aiClassification.scores.FAKE * 100).toFixed(1) : '0';
         const realPct = aiClassification.scores?.REAL ? (aiClassification.scores.REAL * 100).toFixed(1) : '0';
+        const isFake = aiClassification.predictedClass === 'FAKE';
+        const isInconclusive = aiClassification.predictedClass === 'INCONCLUSIVE';
         evidence.push({
           id: 'ev-ai-classifier',
-          title: `Pretrained ViT Classification: ${aiClassification.predictedClass === 'FAKE' ? 'Synthetic / AI-Generated' : 'Authentic / Real-World'}`,
+          title: `Classifier Verdict: ${isFake ? 'Likely fully AI-generated' : (isInconclusive ? 'Inconclusive' : 'No signs of full AI generation')}`,
           category: 'spatial_artifacts',
-          severity: aiClassification.predictedClass === 'FAKE' ? 'high' : 'clean',
+          severity: isFake ? 'high' : (isInconclusive ? 'medium' : 'clean'),
           score: Math.round(confidenceScore || 50),
           summary: `Model: ${aiClassification.modelName}. Class activation: Fake ${fakePct}% vs Real ${realPct}%.`,
-          details: `Vision Transformer (ViT-Base, fine-tuned on CIFAKE). Softmax output logits: Fake=${aiClassification.rawLogits?.FAKE}, Real=${aiClassification.rawLogits?.REAL}. ${aiClassification.calibrationStatement} ${aiClassification.scopeLimitation}`,
+          details: `${aiClassification.predictedLabelDescription || ''} ${aiClassification.calibrationStatement} ${aiClassification.scopeLimitation}`,
           visualCue: `Inference completed in ${aiClassification.inferenceTimeMs}ms on CPU.`,
           isDemonstrationOnly: false
         });
@@ -193,6 +296,30 @@ export const analysisService = {
           summary: aiClassification.errorMessage || 'Model weights not loaded or inference failed.',
           details: 'TruthLens operates honestly in deterministic signal-processing mode when the neural classifier is unavailable. No mock or fabricated predictions are returned.',
           visualCue: 'Review server logs or network status.',
+          isDemonstrationOnly: false
+        });
+      }
+
+      // 1b. Provenance Clues Evidence Item
+      if (provenance) {
+        evidence.push({
+          id: 'ev-provenance-clues',
+          title: provenance.aiSourceDeclared 
+            ? 'Provenance Clues: AI Source / Editing Declared in Metadata' 
+            : 'Provenance Clues: Metadata & Container Inspection',
+          category: 'metadata_compression',
+          severity: provenance.aiSourceDeclared ? 'medium' : 'info',
+          score: provenance.aiSourceDeclared ? 75 : 20,
+          summary: provenance.aiSourceDeclared
+            ? `Metadata declared: ${provenance.declaredSourceType || provenance.toolStrings.join(', ') || 'AI editing marker'}.`
+            : (provenance.toolStrings.length > 0 
+                ? `Tool markers: ${provenance.toolStrings.join(', ')}.` 
+                : (provenance.notes.length > 0 ? provenance.notes[0] : 'No provenance clues found.')),
+          details: [
+            ...provenance.notes,
+            'Provenance clues are auxiliary metadata indicators and never alter the neural classifier verdict.'
+          ].join(' • '),
+          visualCue: provenance.c2paPresent ? 'C2PA manifest marker present in media container.' : 'EXIF / XMP / IPTC metadata inspection.',
           isDemonstrationOnly: false
         });
       }
@@ -294,6 +421,7 @@ export const analysisService = {
           disclaimer: backendData.frequency_analysis.disclaimer
         },
         aiClassification,
+        provenance,
         limitations: backendData.limitations,
         nextSteps: backendData.recommendations,
         modelInfo: {

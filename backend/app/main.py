@@ -1,5 +1,15 @@
+import os
+import sys
+import threading
 import logging
 from contextlib import asynccontextmanager
+from pathlib import Path
+
+# Ensure backend directory is in sys.path when executed via python app/main.py or python -m app.main
+BACKEND_DIR = Path(__file__).resolve().parent.parent
+if str(BACKEND_DIR) not in sys.path:
+    sys.path.insert(0, str(BACKEND_DIR))
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.routes.analysis import router as analysis_router
@@ -11,15 +21,25 @@ logging.basicConfig(
 )
 logger = logging.getLogger("truthlens")
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    # Eagerly initialize and load the model on startup so requests do not block or re-download
-    logger.info("Initializing ViT AI Classifier Service on startup...")
+def _load_model_background():
+    """Worker thread target to load neural model weights without delaying server port binding."""
+    logger.info("Background thread: loading AI Classifier model weights...")
     success = classifier_service.initialize()
     if success:
-        logger.info("AI Classifier model is ready for CPU inference.")
+        logger.info("AI Classifier model is loaded and ready for CPU inference.")
     else:
-        logger.warning(f"AI Classifier could not be loaded on startup: {classifier_service.error_details}")
+        logger.warning(f"AI Classifier could not be loaded: {classifier_service.error_details}")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Non-blocking startup: start loading model in background thread
+    logger.info("Triggering background initialization of AI Classifier Service...")
+    loader_thread = threading.Thread(
+        target=_load_model_background,
+        daemon=True,
+        name="model-loader-worker"
+    )
+    loader_thread.start()
     yield
     logger.info("Shutting down TruthLens Forensics API...")
 
@@ -30,17 +50,22 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# Configure CORS for local dev + deployed Vercel frontend
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[
+# Configure CORS origins from ALLOWED_ORIGINS env var (comma-separated) with local dev fallback
+raw_allowed_origins = os.environ.get("ALLOWED_ORIGINS", "")
+if raw_allowed_origins.strip():
+    allowed_origins = [o.strip() for o in raw_allowed_origins.split(",") if o.strip()]
+else:
+    allowed_origins = [
         "http://localhost:5173",
         "http://127.0.0.1:5173",
         "http://localhost:3000",
         "http://127.0.0.1:3000",
         "https://new-project-theta-taupe.vercel.app",
-    ],
-    allow_origin_regex=r"https://.*\.vercel\.app",
+    ]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -49,17 +74,27 @@ app.add_middleware(
 # Register routes
 app.include_router(analysis_router)
 
+@app.get("/api/ping")
+def ping():
+    """Direct root /api/ping check that returns immediately without touching AI model."""
+    return {"ok": True}
+
 @app.get("/")
 def root():
     return {
         "message": "Welcome to TruthLens Media Forensics Engine",
         "documentation": "/docs",
         "health": "/api/health",
+        "ping": "/api/ping",
         "ai_model": classifier_service.MODEL_NAME,
         "ai_model_connected": classifier_service.is_available,
+        "ai_model_status": classifier_service.status,
         "status": "operational"
     }
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("app.main:app", host="127.0.0.1", port=8000, reload=True)
+    port = int(os.environ.get("PORT", 8000))
+    host = os.environ.get("HOST", "0.0.0.0")
+    logger.info(f"Starting uvicorn server on {host}:{port}...")
+    uvicorn.run("app.main:app", host=host, port=port, reload=False)

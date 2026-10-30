@@ -67,7 +67,7 @@ export interface FrequencyAnalysis {
 export interface ModelMetadata {
   name: string;
   version: string;
-  mode: 'genuine_signal_processing' | 'demo_simulation' | 'pretrained_onnx' | 'backend_fastapi';
+  mode: 'genuine_signal_processing' | 'demo_simulation' | 'backend_fastapi';
   disclaimer: string;
 }
 
@@ -76,15 +76,27 @@ export interface AIClassificationResult {
   modelName: string;
   modelVersion: string;
   status: 'success' | 'unavailable' | 'error';
-  predictedClass?: 'REAL' | 'FAKE' | string | null;
+  predictedClass?: 'REAL' | 'FAKE' | 'INCONCLUSIVE' | string | null;
   predictedLabelDescription?: string | null;
   confidenceScore?: number | null;
+  decisionThreshold?: number | null;
+  uncertainBand?: number | null;
   scores?: { REAL: number; FAKE: number } | Record<string, number> | null;
   rawLogits?: { REAL: number; FAKE: number } | Record<string, number> | null;
   calibrationStatement: string;
   scopeLimitation: string;
   inferenceTimeMs?: number | null;
   errorMessage?: string | null;
+}
+
+export interface ProvenanceResult {
+  aiSourceDeclared: boolean;
+  declaredSourceType?: string | null;
+  toolStrings: string[];
+  c2paPresent: boolean;
+  c2paVerified?: boolean | null;
+  watermarkMatch?: string | null;
+  notes: string[];
 }
 
 export interface AnalysisResult {
@@ -106,6 +118,7 @@ export interface AnalysisResult {
   metadataAnalysis?: ImageMetadataAnalysis;
   frequencyAnalysis?: FrequencyAnalysis;
   aiClassification?: AIClassificationResult;
+  provenance?: ProvenanceResult;
   videoFrames?: VideoFrameSample[];
   limitations: string[];
   nextSteps: string[];
@@ -122,6 +135,9 @@ export interface AnalysisHistoryEntry {
   confidenceScore: number | null;
   summary: string;
   mode: 'genuine_signal_processing' | 'demo_simulation';
+  aiSourceDeclared?: boolean;
+  declaredSourceType?: string | null;
+  toolStrings?: string[];
 }
 
 export interface SampleMedia {

@@ -1,0 +1,53 @@
+================================================================================
+                 TRUTHLENS FORENSIC MODEL EVALUATION REPORT
+================================================================================
+Model Backend     : smaug (Smaug AI Image Detector (Abacus AI))
+Dataset Size      : 55 images (28 Real, 27 Fake)
+   [!] WARNING: Dataset sample size is under 30 images (Real: 28, Fake: 27). Confidence intervals are wider.
+Average Latency   : 2454.0 ms / image on CPU
+Peak Working RAM  : 2524.0 MB
+Cutoff Threshold  : 0.50 (Uncertain Band: +/-0.10)
+Uncertain Window  : [0.40, 0.60] -> INCONCLUSIVE
+--------------------------------------------------------------------------------
+1. PERFORMANCE SUMMARY (Threshold = 0.50, Band = +/-0.10)
+   Conclusive Accuracy    : 100.00% (54/54 decisive verdicts)
+   Strict Accuracy        : 98.18% (54/55 total dataset)
+   Inconclusive Rate      : 1.82% (1/55 within uncertain band)
+   False Positive Rate    : 0.00% (0/28 real photos called fake) [95% Wilson CI: 0.0% - 12.1%]
+   False Negative Rate    : 0.00% (0/27 AI images missed as real) [95% Wilson CI: 0.0% - 12.5%]
+
+2. THREE-WAY CONFUSION MATRIX
+                          Pred REAL    Pred INCONCLUSIVE    Pred FAKE
+   Actual REAL (Authentic): TN =   28        INC =    0         FP =    0
+   Actual FAKE (Synthetic): FN =    0        INC =    1         TP =   26
+--------------------------------------------------------------------------------
+3. INCONCLUSIVE / BORDERLINE FILES (1 total in [0.40, 0.60]):
+   - [Truth: FAKE -> INCONCLUSIVE] movie scene.webp                    (FakeProb:  46.4%)
+--------------------------------------------------------------------------------
+4. DEFINITIVE MISCLASSIFICATIONS (0 total):
+   None! Zero definitive false positives or false negatives outside the band.
+--------------------------------------------------------------------------------
+5. OPTIMAL THRESHOLD SWEEP (Band = +/-0.10)
+   Threshold | Concl. Acc | Strict Acc | Inconcl % | FPR (Real->Fake) | FNR (Fake->Real)
+      0.05   |   100.0%   |    49.1%   |    50.9%   |        0.0%      |        0.0% <-- OPTIMAL
+      0.10   |   100.0%   |    49.1%   |    50.9%   |        0.0%      |        0.0%
+      0.15   |   100.0%   |   100.0%   |     0.0%   |        0.0%      |        0.0%
+      0.20   |   100.0%   |   100.0%   |     0.0%   |        0.0%      |        0.0%
+      0.25   |   100.0%   |   100.0%   |     0.0%   |        0.0%      |        0.0%
+      0.30   |   100.0%   |   100.0%   |     0.0%   |        0.0%      |        0.0%
+      0.35   |   100.0%   |   100.0%   |     0.0%   |        0.0%      |        0.0%
+      0.40   |   100.0%   |    98.2%   |     1.8%   |        0.0%      |        0.0%
+      0.45   |   100.0%   |    98.2%   |     1.8%   |        0.0%      |        0.0%
+      0.50   |   100.0%   |    98.2%   |     1.8%   |        0.0%      |        0.0%
+      0.55   |   100.0%   |    98.2%   |     1.8%   |        0.0%      |        0.0%
+      0.60   |    98.2%   |    98.2%   |     0.0%   |        0.0%      |        3.7%
+      0.65   |    98.2%   |    98.2%   |     0.0%   |        0.0%      |        3.7%
+      0.70   |    98.2%   |    98.2%   |     0.0%   |        0.0%      |        3.7%
+      0.75   |    98.2%   |    98.2%   |     0.0%   |        0.0%      |        3.7%
+      0.80   |    98.1%   |    96.4%   |     1.8%   |        0.0%      |        3.7%
+      0.85   |    98.1%   |    96.4%   |     1.8%   |        0.0%      |        3.7%
+      0.90   |    96.6%   |    50.9%   |    47.3%   |        0.0%      |        3.7%
+      0.95   |    96.6%   |    50.9%   |    47.3%   |        0.0%      |        3.7%
+--------------------------------------------------------------------------------
+   RECOMMENDED OPTIMAL THRESHOLD: 0.05 (Conclusive Acc: 100.0%, FPR: 0.0%)
+================================================================================

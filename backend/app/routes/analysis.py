@@ -1,4 +1,5 @@
 from fastapi import APIRouter, UploadFile, File, HTTPException, status
+from starlette.concurrency import run_in_threadpool
 from app.schemas.analysis import ForensicAnalysisResponse
 from app.services.detector import detector_service
 from app.services.classifier import classifier_service
@@ -6,6 +7,11 @@ from app.services.classifier import classifier_service
 router = APIRouter(prefix="/api", tags=["analysis"])
 
 MAX_IMAGE_SIZE = 15 * 1024 * 1024  # 15 MB
+
+@router.get("/ping")
+def ping():
+    """Instant lightweight liveness probe without touching AI model."""
+    return {"ok": True}
 
 @router.get("/health")
 def health_check():
@@ -23,7 +29,7 @@ def health_check():
             "Real 2D-FFT frequency spectrum computation",
             "Image EXIF and dimension metadata extraction",
             "Radial spectral energy distribution analysis",
-            "Pretrained Vision Transformer AI-generated image classification (Dual-View ViT CPU)"
+            f"AI-generated image classification via {classifier_service.MODEL_NAME} ({classifier_service.backend_key.upper()} CPU)"
         ]
     }
 
@@ -51,8 +57,9 @@ async def analyze_image(file: UploadFile = File(...)):
         )
 
     try:
-        # Perform genuine metadata extraction and 2D-FFT computation
-        result = detector_service.analyze_image(file_bytes, file.filename)
+        # Perform genuine metadata extraction and 2D-FFT computation on worker thread pool
+        # to prevent blocking event loop and keep /api/health and /api/ping responsive
+        result = await run_in_threadpool(detector_service.analyze_image, file_bytes, file.filename)
         return result
     except ValueError as ve:
         # User error: invalid or corrupted image file

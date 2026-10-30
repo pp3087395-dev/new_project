@@ -2,9 +2,9 @@ import io
 import math
 import base64
 import hashlib
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Any
 import numpy as np
-from PIL import Image, ExifTags
+from PIL import Image, ImageOps, ExifTags
 
 from app.schemas.analysis import (
     ForensicAnalysisResponse,
@@ -13,8 +13,10 @@ from app.schemas.analysis import (
     FrequencyAnalysisSchema,
     SpectralEnergySchema,
     AIClassificationSchema,
+    ProvenanceSchema,
 )
 from app.services.classifier import classifier_service
+from app.services.provenance import inspect_provenance
 
 class MediaDetectorService:
     """
@@ -46,6 +48,65 @@ class MediaDetectorService:
             return "1:1 (Square)"
         return f"{w_ratio}:{h_ratio} ({decimal:.2f}:1)"
 
+    @staticmethod
+    def safe_to_rgb(image: Image.Image) -> Image.Image:
+        """
+        Safely converts any PIL Image mode (RGBA, P, L, CMYK, 16-bit, etc.) to 8-bit RGB.
+        Composites alpha channels over a solid white background instead of black.
+        """
+        if image.mode == "RGB":
+            return image
+
+        if image.mode == "P":
+            if "transparency" in image.info:
+                image = image.convert("RGBA")
+            else:
+                return image.convert("RGB")
+
+        if image.mode in ("RGBA", "LA") or (image.mode == "P" and "transparency" in image.info):
+            rgba = image.convert("RGBA")
+            white_bg = Image.new("RGBA", rgba.size, (255, 255, 255, 255))
+            composite = Image.alpha_composite(white_bg, rgba)
+            return composite.convert("RGB")
+
+        if image.mode == "CMYK":
+            return image.convert("RGB")
+
+        if image.mode in ("L", "1"):
+            return image.convert("RGB")
+
+        if image.mode in ("I", "F", "I;16", "I;16L", "I;16B", "I;16N"):
+            return image.convert("L").convert("RGB")
+
+        return image.convert("RGB")
+
+    @staticmethod
+    def _add_exif_field(exif_dict: Dict[str, str], tag_name: str, value: Any):
+        """Format an EXIF field into a readable string while excluding raw binary blobs."""
+        if tag_name in ("MakerNote", "UserComment") and isinstance(value, bytes):
+            return
+        if isinstance(value, (str, int, float, bool)):
+            s = str(value).strip()
+            if s:
+                exif_dict[tag_name] = s
+        elif isinstance(value, bytes):
+            try:
+                decoded = value.decode("utf-8", errors="ignore").strip()
+                if decoded and all(c.isprintable() or c.isspace() for c in decoded):
+                    exif_dict[tag_name] = decoded
+            except Exception:
+                pass
+        elif isinstance(value, (tuple, list)):
+            exif_dict[tag_name] = str(value)
+        elif hasattr(value, "numerator") and hasattr(value, "denominator"):
+            if value.denominator != 0:
+                float_val = float(value.numerator) / float(value.denominator)
+                exif_dict[tag_name] = f"{float_val:.4g}" if float_val != int(float_val) else str(int(float_val))
+            else:
+                exif_dict[tag_name] = str(value)
+        else:
+            exif_dict[tag_name] = str(value)
+
     def extract_metadata(self, image: Image.Image, file_size_bytes: int) -> ImageMetadataSchema:
         width, height = image.size
         aspect_ratio = self._calculate_aspect_ratio(width, height)
@@ -64,17 +125,31 @@ class MediaDetectorService:
 
         raw_exif = image.getexif()
         if raw_exif:
-            has_exif = True
+            # 1. Read top-level 0th IFD
             for tag_id, value in raw_exif.items():
                 tag_name = ExifTags.TAGS.get(tag_id, str(tag_id))
-                # Filter to common readable string fields and exclude raw binary blobs
-                if isinstance(value, (str, int, float)):
-                    exif_data[tag_name] = str(value)
-                elif isinstance(value, bytes):
-                    try:
-                        exif_data[tag_name] = value.decode("utf-8", errors="ignore").strip()
-                    except Exception:
-                        pass
+                self._add_exif_field(exif_data, tag_name, value)
+
+            # 2. Read Exif Sub-IFD (0x8769) for DateTimeOriginal, Exposure, Focal Length, etc.
+            try:
+                exif_ifd = raw_exif.get_ifd(0x8769)
+                for tag_id, value in exif_ifd.items():
+                    tag_name = ExifTags.TAGS.get(tag_id, str(tag_id))
+                    self._add_exif_field(exif_data, tag_name, value)
+            except Exception:
+                pass
+
+            # 3. Read GPS Sub-IFD (0x8825) for GPS coordinates and timestamps
+            try:
+                gps_ifd = raw_exif.get_ifd(0x8825)
+                for tag_id, value in gps_ifd.items():
+                    tag_name = ExifTags.GPSTAGS.get(tag_id, ExifTags.TAGS.get(tag_id, str(tag_id)))
+                    self._add_exif_field(exif_data, tag_name, value)
+            except Exception:
+                pass
+
+            if len(exif_data) > 0:
+                has_exif = True
 
         # Identify missing or omitted metadata fields
         if not has_exif or len(exif_data) == 0:
@@ -91,7 +166,7 @@ class MediaDetectorService:
                 missing_metadata.append("Capture timestamp omitted.")
             if "Software" not in exif_data:
                 missing_metadata.append("Processing software tag absent.")
-            if "GPSInfo" not in exif_data:
+            if "GPSInfo" not in exif_data and "GPSLatitude" not in exif_data:
                 missing_metadata.append("GPS / Geotagging coordinates absent.")
 
         return ImageMetadataSchema(
@@ -137,9 +212,6 @@ class MediaDetectorService:
             normalized = ((log_magnitude - min_val) / range_val * 255.0).astype(np.uint8)
 
         # 5. Apply high-contrast forensic false-color LUT:
-        # 0 (Low energy) -> Deep Navy (#080E24)
-        # 128 (Mid energy) -> High-Contrast Cyan (#06B6D4)
-        # 255 (Peak energy) -> Brilliant White (#FFFFFF)
         lut = np.zeros((256, 3), dtype=np.uint8)
         for i in range(256):
             t = i / 255.0
@@ -159,7 +231,8 @@ class MediaDetectorService:
                 ]
 
         colored_spectrum = lut[normalized]
-        spectrum_image = Image.fromarray(colored_spectrum, mode="RGB")
+        # Remove deprecated mode="RGB" argument in Image.fromarray
+        spectrum_image = Image.fromarray(colored_spectrum)
 
         # Encode resulting image as Base64 PNG data URI
         buffer = io.BytesIO()
@@ -245,12 +318,23 @@ class MediaDetectorService:
         # 1. Extract genuine metadata & EXIF
         metadata_analysis = self.extract_metadata(image, file_size_bytes)
 
-        # 2. Compute genuine 2D-FFT frequency spectrum
-        frequency_analysis = self.compute_2d_fft(image)
+        # 2. Apply EXIF orientation transpose so rotated camera shots are upright before FFT and inference
+        transposed_img = ImageOps.exif_transpose(image)
+        if transposed_img is None:
+            transposed_img = image
 
-        # 3. Perform genuine AI-Generated Image Classification (Vision Transformer ONNX)
-        ai_pred = classifier_service.predict(image)
+        # 3. Safely convert to standard RGB (compositing alpha on white, handling P, L, CMYK, 16-bit)
+        rgb_img = self.safe_to_rgb(transposed_img)
+
+        # 4. Compute genuine 2D-FFT frequency spectrum on upright RGB image
+        frequency_analysis = self.compute_2d_fft(rgb_img)
+
+        # 5. Perform genuine AI-Generated Image Classification (Vision Transformer) on upright RGB image
+        ai_pred = classifier_service.predict(rgb_img)
         ai_classification = AIClassificationSchema(**ai_pred)
+
+        # 6. Inspect metadata provenance, IPTC DigitalSourceType, tool signatures, and C2PA markers
+        provenance = inspect_provenance(file_bytes, image)
 
         # Contextualize status and limitations honestly
         if ai_classification.status == "success":
@@ -259,7 +343,7 @@ class MediaDetectorService:
                 f"Prediction: {ai_classification.predicted_class} (Scores: Real={ai_classification.scores['REAL']}, Fake={ai_classification.scores['FAKE']}). "
                 f"Inference: {ai_classification.inference_time_ms}ms on CPU."
             )
-            stage_label = "Image Forensics & Pretrained ViT AI Classifier"
+            stage_label = f"Image Forensics & {classifier_service.MODEL_NAME}"
         elif ai_classification.status == "unavailable":
             model_status = (
                 f"AI model unavailable: {ai_classification.error_message}. "
@@ -274,6 +358,7 @@ class MediaDetectorService:
             stage_label = "Image Forensics — AI Inference Error"
 
         limitations = [
+            "This tool estimates whether an image is fully AI-generated. It cannot tell whether a real photo was edited, retouched, upscaled or AI-enhanced. Absence of detection is not proof the image is untouched.",
             "AI model classification is statistical and trained across modern generative diffusion outputs and real photography; it does not provide definitive judicial or mathematical proof.",
             "This model is specialized for detecting AI-generated synthetic images and has not been established as a universal face-swap detector.",
             "Scores are raw softmax outputs from Vision Transformer logits and represent model activation strength rather than calibrated Bayesian probabilities.",
@@ -286,11 +371,13 @@ class MediaDetectorService:
             "Evaluate the Vision Transformer prediction alongside the 2D-FFT frequency spectrum and EXIF provenance data for multi-spectral corroboration.",
             "Examine the 2D-FFT magnitude spectrum for abnormal periodic starburst or cross-hatch spikes characteristic of GAN transposed convolutions.",
             "Inspect the EXIF table for software provenance tags (e.g., Photoshop, Midjourney) or missing camera hardware parameters.",
-            "Do not label an image definitively authentic or inauthentic based on automated AI model scores alone.",
+            "Do not treat absence of AI generation detection as proof that an image is untouched or authentic.",
             "Cross-reference the image with reverse-image search engines (Google Lens, TinEye) to trace publication history."
         ]
 
-        audit_id = f"TL-FOR-{hashlib.md5(file_bytes[:64]).hexdigest()[:6].upper()}"
+        # Audit ID: TL- followed by first 10 uppercase hex characters of the file SHA-256 hash
+        hex_digest = sha256_hash.replace("sha256:", "")
+        audit_id = f"TL-{hex_digest[:10].upper()}"
 
         return ForensicAnalysisResponse(
             status="success",
@@ -305,6 +392,7 @@ class MediaDetectorService:
             metadata_analysis=metadata_analysis,
             frequency_analysis=frequency_analysis,
             ai_classification=ai_classification,
+            provenance=provenance,
             model_status=model_status,
             limitations=limitations,
             recommendations=recommendations,

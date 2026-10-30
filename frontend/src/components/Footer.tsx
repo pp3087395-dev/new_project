@@ -5,6 +5,8 @@ interface FooterProps {
   setActiveTab: (tab: string) => void;
 }
 
+const CURRENT_YEAR = new Date().getFullYear();
+
 export const Footer: FC<FooterProps> = ({ setActiveTab }) => {
   return (
     <footer className="border-t border-slate-800 bg-[#05070D] text-slate-400 text-xs py-12 relative overflow-hidden">
@@ -100,10 +102,10 @@ export const Footer: FC<FooterProps> = ({ setActiveTab }) => {
         {/* Bottom Bar */}
         <div className="pt-6 border-t border-slate-800/80 flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px] text-slate-400">
           <div>
-            © {new Date().getFullYear()} TruthLens Project. All rights reserved.
+            © {CURRENT_YEAR} TruthLens Project. All rights reserved.
           </div>
           <div className="flex items-center gap-4">
-            <span>Phase 1 Frontend Prototype</span>
+            <span>Neural & Signal Forensics</span>
             <span>•</span>
             <span className="text-cyan-400">FastAPI Ready</span>
           </div>

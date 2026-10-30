@@ -1,0 +1,80 @@
+================================================================================
+                 TRUTHLENS FORENSIC MODEL EVALUATION REPORT
+================================================================================
+Model Backend     : legacy (ViT AI Image Detector (umm-maybe / Baseline))
+Dataset Size      : 55 images (28 Real, 27 Fake)
+   [!] WARNING: Dataset sample size is under 30 images (Real: 28, Fake: 27). Confidence intervals are wider.
+Average Latency   : 193.5 ms / image on CPU
+Peak Working RAM  : 879.1 MB
+Cutoff Threshold  : 0.50 (Uncertain Band: +/-0.10)
+Uncertain Window  : [0.40, 0.60] -> INCONCLUSIVE
+--------------------------------------------------------------------------------
+1. PERFORMANCE SUMMARY (Threshold = 0.50, Band = +/-0.10)
+   Conclusive Accuracy    : 56.52% (26/46 decisive verdicts)
+   Strict Accuracy        : 47.27% (26/55 total dataset)
+   Inconclusive Rate      : 16.36% (9/55 within uncertain band)
+   False Positive Rate    : 21.43% (6/28 real photos called fake) [95% Wilson CI: 10.2% - 39.5%]
+   False Negative Rate    : 51.85% (14/27 AI images missed as real) [95% Wilson CI: 34.0% - 69.3%]
+
+2. THREE-WAY CONFUSION MATRIX
+                          Pred REAL    Pred INCONCLUSIVE    Pred FAKE
+   Actual REAL (Authentic): TN =   17        INC =    5         FP =    6
+   Actual FAKE (Synthetic): FN =   14        INC =    4         TP =    9
+--------------------------------------------------------------------------------
+3. INCONCLUSIVE / BORDERLINE FILES (9 total in [0.40, 0.60]):
+   - [Truth: REAL -> INCONCLUSIVE] 1.1.jpeg                            (FakeProb:  49.3%)
+   - [Truth: REAL -> INCONCLUSIVE] 1.3.jpeg                            (FakeProb:  59.2%)
+   - [Truth: REAL -> INCONCLUSIVE] 458.jpeg                            (FakeProb:  50.9%)
+   - [Truth: REAL -> INCONCLUSIVE] 55.jpeg                             (FakeProb:  55.6%)
+   - [Truth: REAL -> INCONCLUSIVE] 555.jpeg                            (FakeProb:  46.8%)
+   - [Truth: FAKE -> INCONCLUSIVE] 1990s beautiful blonde Supergirl.webp (FakeProb:  49.1%)
+   - [Truth: FAKE -> INCONCLUSIVE] a realistic version of calvin and hobbes.webp (FakeProb:  42.2%)
+   - [Truth: FAKE -> INCONCLUSIVE] Create an image if a ginger tabby cat laying cozy.webp (FakeProb:  41.4%)
+   - [Truth: FAKE -> INCONCLUSIVE] movie scene.webp                    (FakeProb:  59.0%)
+--------------------------------------------------------------------------------
+4. DEFINITIVE MISCLASSIFICATIONS (20 total):
+   - [REAL -> Pred FAKE] 1.4.jpeg                            (FakeProb:  85.4%)
+   - [REAL -> Pred FAKE] 4.jpeg                              (FakeProb:  78.4%)
+   - [REAL -> Pred FAKE] 5.jpeg                              (FakeProb:  89.9%)
+   - [REAL -> Pred FAKE] 6.jpeg                              (FakeProb:  75.7%)
+   - [REAL -> Pred FAKE] 7.jpeg                              (FakeProb:  70.8%)
+   - [REAL -> Pred FAKE] WhatsApp Image 2026-10-26 at 1.05.57 AM.jpeg (FakeProb:  80.7%)
+   - [FAKE -> Pred REAL] 4-year-old boy.webp                 (FakeProb:  25.5%)
+   - [FAKE -> Pred REAL] A black man; cushite; tight nappy curls low level.webp (FakeProb:  34.8%)
+   - [FAKE -> Pred REAL] a cat in a business suit sitting in a crowded subw.webp (FakeProb:  13.5%)
+   - [FAKE -> Pred REAL] A girl with long straight hair in 80’s anime vinta.webp (FakeProb:  14.7%)
+   - [FAKE -> Pred REAL] A pretty girl in Tokyo.webp         (FakeProb:   9.4%)
+   - [FAKE -> Pred REAL] a professional production photo of a Lara Croft le.webp (FakeProb:   4.6%)
+   - [FAKE -> Pred REAL] a young woman photographed with soft lighting agai.webp (FakeProb:   2.3%)
+   - [FAKE -> Pred REAL] An extremely unremarkable iPhone photo with no cle.webp (FakeProb:  11.3%)
+   - [FAKE -> Pred REAL] attractive woman in stockings.webp  (FakeProb:   6.7%)
+   - [FAKE -> Pred REAL] barack obama hoopin.webp            (FakeProb:  33.1%)
+   - [FAKE -> Pred REAL] Japanese.webp                       (FakeProb:  35.0%)
+   - [FAKE -> Pred REAL] photo realistic albert einstein at a gym pumping i.webp (FakeProb:  28.1%)
+   - [FAKE -> Pred REAL] the stock trading floor is filled with water.webp (FakeProb:  26.2%)
+   - [FAKE -> Pred REAL] very pretty caucasian girl at age 18(with subtle a.webp (FakeProb:   4.0%)
+--------------------------------------------------------------------------------
+5. OPTIMAL THRESHOLD SWEEP (Band = +/-0.10)
+   Threshold | Concl. Acc | Strict Acc | Inconcl % | FPR (Real->Fake) | FNR (Fake->Real)
+      0.05   |    48.7%   |    34.5%   |    29.1%   |       71.4%      |        0.0%
+      0.10   |    52.8%   |    34.5%   |    34.5%   |       60.7%      |        0.0%
+      0.15   |    56.8%   |    38.2%   |    32.7%   |       46.4%      |       11.1%
+      0.20   |    54.1%   |    36.4%   |    32.7%   |       42.9%      |       18.5%
+      0.25   |    51.2%   |    38.2%   |    25.5%   |       42.9%      |       29.6%
+      0.30   |    55.8%   |    43.6%   |    21.8%   |       39.3%      |       29.6%
+      0.35   |    57.8%   |    47.3%   |    18.2%   |       39.3%      |       29.6% <-- OPTIMAL
+      0.40   |    56.5%   |    47.3%   |    16.4%   |       32.1%      |       40.7%
+      0.45   |    54.2%   |    47.3%   |    12.7%   |       28.6%      |       51.9%
+      0.50   |    56.5%   |    47.3%   |    16.4%   |       21.4%      |       51.9%
+      0.55   |    54.2%   |    47.3%   |    12.7%   |       21.4%      |       59.3%
+      0.60   |    52.1%   |    45.5%   |    12.7%   |       21.4%      |       63.0%
+      0.65   |    54.2%   |    47.3%   |    12.7%   |       17.9%      |       63.0%
+      0.70   |    56.2%   |    49.1%   |    12.7%   |       10.7%      |       66.7%
+      0.75   |    56.5%   |    47.3%   |    16.4%   |        7.1%      |       66.7%
+      0.80   |    53.3%   |    43.6%   |    18.2%   |        0.0%      |       77.8%
+      0.85   |    52.3%   |    41.8%   |    20.0%   |        0.0%      |       77.8%
+      0.90   |    53.2%   |    45.5%   |    14.5%   |        0.0%      |       81.5%
+      0.95   |    53.1%   |    47.3%   |    10.9%   |        0.0%      |       85.2%
+--------------------------------------------------------------------------------
+   RECOMMENDED OPTIMAL THRESHOLD: 0.35 (Conclusive Acc: 57.8%, FPR: 39.3%)
+================================================================================

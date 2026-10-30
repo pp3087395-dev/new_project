@@ -26,6 +26,9 @@ export const historyService = {
         confidenceScore: result.confidenceScore,
         summary: result.summary,
         mode: result.mode,
+        aiSourceDeclared: result.provenance?.aiSourceDeclared,
+        declaredSourceType: result.provenance?.declaredSourceType,
+        toolStrings: result.provenance?.toolStrings,
       };
 
       // Keep recent 30 items

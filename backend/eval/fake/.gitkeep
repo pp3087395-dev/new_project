@@ -1,0 +1,7 @@
+# Evaluation dataset directory for synthetic (AI/FAKE) images.
+# Add at least 30 AI-generated images here:
+# - Midjourney (v5 / v6 / v7)
+# - Flux (Schnell / Dev)
+# - Stable Diffusion XL (SDXL)
+# - OpenAI DALL-E / GPT-image
+# - Google Gemini / Imagen
