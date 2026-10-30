@@ -4,8 +4,8 @@
 Model Backend     : smaug (Smaug AI Image Detector (Abacus AI))
 Dataset Size      : 55 images (28 Real, 27 Fake)
    [!] WARNING: Dataset sample size is under 30 images (Real: 28, Fake: 27). Confidence intervals are wider.
-Average Latency   : 2786.0 ms / image on CPU
-Peak Working RAM  : 2707.8 MB
+Average Latency   : 2454.0 ms / image on CPU
+Peak Working RAM  : 2524.0 MB
 Cutoff Threshold  : 0.50 (Uncertain Band: +/-0.10)
 Uncertain Window  : [0.40, 0.60] -> INCONCLUSIVE
 --------------------------------------------------------------------------------

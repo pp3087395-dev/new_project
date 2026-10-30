@@ -174,8 +174,20 @@ def run_evaluation(
     eval_dir = SCRIPT_DIR
     real_dir = eval_dir / "real"
     fake_dir = eval_dir / "fake"
-    crops_suffix = f"_crops{crops}" if (backend == "smaug" and crops is not None) else ""
-    cache_file = eval_dir / f"cache_{backend}{crops_suffix}.json"
+
+    # Robust cache file key incorporating backend, model ID, mapping version, and preprocessing
+    from app.services.classifier import BACKEND_LABEL_SPECS
+    model_id = BACKEND_LABEL_SPECS.get(backend, {}).get("model_id", backend)
+    sanitized_model = model_id.replace("/", "_").replace("\\", "_").lower()
+    mapping_version = "v2_canonical"
+
+    if backend == "smaug":
+        active_crops = crops if crops is not None else int(os.environ.get("SMAUG_CROPS", "1"))
+        prep_desc = f"crops{active_crops}_cap2048"
+    else:
+        prep_desc = "full_img"
+
+    cache_file = eval_dir / f"cache_{backend}_{sanitized_model}_{mapping_version}_{prep_desc}.json"
 
     real_files = collect_images(real_dir)
     fake_files = collect_images(fake_dir)
@@ -199,17 +211,25 @@ def run_evaluation(
     results: List[Dict] = []
     latencies: List[float] = []
 
-    # Check if cached results exist
+    # Check if cached results exist - ONLY load if --use-cache is explicitly requested and not --no-cache
     cached_map = {}
-    if not no_cache and (use_cache or cache_file.exists()):
+    if use_cache and not no_cache and cache_file.exists():
         try:
             import json
             with open(cache_file, "r", encoding="utf-8") as f:
                 loaded = json.load(f)
-            cached_map = {item["filename"]: item for item in loaded}
-            print(f"[*] Found cache for '{backend}' with {len(cached_map)} entries.")
+            if isinstance(loaded, dict) and "results" in loaded:
+                items = loaded["results"]
+            elif isinstance(loaded, list):
+                items = loaded
+            else:
+                items = []
+            cached_map = {item["filename"]: item for item in items}
+            print(f"[*] Loaded verified cache for '{backend}' ({cache_file.name}) with {len(cached_map)} entries.")
         except Exception as e:
             print(f"[*] Cache load failed ({e}), running fresh evaluation.")
+    elif use_cache and not cache_file.exists():
+        print(f"[*] --use-cache specified, but cache file {cache_file.name} does not exist. Running fresh inference.")
 
     needs_inference = len(cached_map) < total_images
     predictor = None
@@ -290,17 +310,27 @@ def run_evaluation(
     if needs_inference and results:
         try:
             import json
-            cache_file.write_text(json.dumps(results, indent=2), encoding="utf-8")
+            cache_payload = {
+                "metadata": {
+                    "backend": backend,
+                    "model_id": model_id,
+                    "mapping_version": mapping_version,
+                    "preprocessing": prep_desc,
+                    "timestamp": time.time()
+                },
+                "results": results
+            }
+            cache_file.write_text(json.dumps(cache_payload, indent=2), encoding="utf-8")
             print(f"[*] Saved inference cache to: {cache_file}")
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"[!] Warning: Failed to write cache {cache_file}: {e}")
 
     # Model name
     model_name = predictor.model_name if predictor else f"{backend.upper()} (cached)"
     if backend == "smaug":
         model_name = "Smaug AI Image Detector (Abacus AI)"
     elif backend == "siglip":
-        model_name = "SigLIP AI Image Detector (Ateeqq / Multi-View)"
+        model_name = "SigLIP AI Image Detector (Ateeqq / SigLIP)"
     elif backend == "legacy":
         model_name = "ViT AI Image Detector (umm-maybe / Baseline)"
 

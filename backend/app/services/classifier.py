@@ -37,35 +37,99 @@ def safe_to_rgb(image: Image.Image) -> Image.Image:
     return image.convert("RGB")
 
 
-def build_label_mapping(id2label: Dict[Any, str], model_id: str) -> Dict[str, int]:
-    """
-    Dynamically maps Hugging Face classification labels to 'FAKE' and 'REAL' indices.
-    Never hardcodes index 0 or index 1.
-    """
-    fake_idx = None
-    real_idx = None
+# Authoritative per-backend label mapping specifications (Single Source of Truth)
+BACKEND_LABEL_SPECS: Dict[str, Dict[str, Any]] = {
+    "siglip": {
+        "model_id": "Ateeqq/ai-vs-human-image-detector",
+        "fake_labels": {"ai"},
+        "real_labels": {"hum"},
+    },
+    "legacy": {
+        "model_id": "umm-maybe/AI-image-detector",
+        "fake_labels": {"artificial"},
+        "real_labels": {"human"},
+    },
+    "smaug": {
+        "model_id": "abacusai/Smaug-AI-Image-Detector",
+        "output_type": "sigmoid_scalar",
+        "fake_labels": {"label_1", "fake", "ai", "synthetic"},
+        "real_labels": {"label_0", "real", "human"},
+    },
+}
 
-    fake_keywords = ("artificial", "ai", "fake", "generated", "synthetic")
-    real_keywords = ("human", "hum", "real", "authentic")
+
+def build_label_mapping(
+    id2label: Dict[Any, str],
+    model_id: str,
+    backend_key: Optional[str] = None
+) -> Dict[str, int]:
+    """
+    Robustly maps Hugging Face classification labels to 'FAKE' and 'REAL' indices
+    using explicit per-backend specifications as the single source of truth.
+    Never relies on hardcoded indices or fuzzy keyword substrings.
+    Raises clear startup ValueError if any label cannot be resolved.
+    """
+    if not isinstance(id2label, dict) or not id2label:
+        raise ValueError(f"Invalid or empty id2label dictionary for '{model_id}': {id2label}")
+
+    fake_idx: Optional[int] = None
+    real_idx: Optional[int] = None
+
+    # 1. Determine matching backend spec
+    spec = None
+    if backend_key and backend_key in BACKEND_LABEL_SPECS:
+        spec = BACKEND_LABEL_SPECS[backend_key]
+    else:
+        for b_key, b_spec in BACKEND_LABEL_SPECS.items():
+            if b_spec.get("model_id") == model_id:
+                spec = b_spec
+                break
+
+    if spec:
+        fake_labels = {lbl.lower() for lbl in spec.get("fake_labels", set())}
+        real_labels = {lbl.lower() for lbl in spec.get("real_labels", set())}
+    else:
+        # Strict exact token matching for custom/test models (no arbitrary substrings)
+        fake_labels = {"artificial", "ai", "fake", "generated", "synthetic"}
+        real_labels = {"human", "hum", "real", "authentic"}
 
     for raw_idx, raw_label in id2label.items():
         label = str(raw_label).lower().strip()
         idx_int = int(raw_idx)
-        if any(kw in label for kw in fake_keywords):
+
+        is_fake = label in fake_labels
+        is_real = label in real_labels
+
+        if is_fake and is_real:
+            raise ValueError(
+                f"Conflicting label definition for '{model_id}': label '{label}' matches both FAKE and REAL categories."
+            )
+
+        if is_fake:
+            if fake_idx is not None and fake_idx != idx_int:
+                raise ValueError(
+                    f"Ambiguous FAKE mapping for '{model_id}': multiple indices ({fake_idx}, {idx_int}) resolve to FAKE."
+                )
             fake_idx = idx_int
-        elif any(kw in label for kw in real_keywords):
+        elif is_real:
+            if real_idx is not None and real_idx != idx_int:
+                raise ValueError(
+                    f"Ambiguous REAL mapping for '{model_id}': multiple indices ({real_idx}, {idx_int}) resolve to REAL."
+                )
             real_idx = idx_int
 
-    if fake_idx is None or real_idx is None:
+    if fake_idx is None or real_idx is None or fake_idx == real_idx:
         raise ValueError(
             f"Unable to dynamically map model labels for '{model_id}' to FAKE and REAL. "
             f"Config id2label={id2label}. Resolved fake_idx={fake_idx}, real_idx={real_idx}."
         )
 
+    raw_fake_name = id2label.get(fake_idx) if fake_idx in id2label else id2label.get(str(fake_idx), str(fake_idx))
+    raw_real_name = id2label.get(real_idx) if real_idx in id2label else id2label.get(str(real_idx), str(real_idx))
     logger.info(
-        f"Dynamic label mapping for '{model_id}': "
-        f"FAKE -> index {fake_idx} ('{id2label[fake_idx]}'), "
-        f"REAL -> index {real_idx} ('{id2label[real_idx]}')"
+        f"Explicit label mapping for '{model_id}': "
+        f"FAKE -> index {fake_idx} ('{raw_fake_name}'), "
+        f"REAL -> index {real_idx} ('{raw_real_name}')"
     )
     return {"FAKE": fake_idx, "REAL": real_idx}
 
@@ -87,7 +151,7 @@ class BaseClassifierBackend:
 class SigLIPBackend(BaseClassifierBackend):
     backend_key = "siglip"
     model_id = "Ateeqq/ai-vs-human-image-detector"
-    model_name = "SigLIP AI Image Detector (Ateeqq / Multi-View)"
+    model_name = "SigLIP AI Image Detector (Ateeqq / SigLIP)"
     model_version = "1.0.0"
 
     def __init__(self):
@@ -103,47 +167,29 @@ class SigLIPBackend(BaseClassifierBackend):
         self.processor = AutoImageProcessor.from_pretrained(self.model_id, token=hf_token)
         self.model = AutoModelForImageClassification.from_pretrained(self.model_id, token=hf_token)
         self.model.eval()
-        self.label_mapping = build_label_mapping(self.model.config.id2label, self.model_id)
+        self.label_mapping = build_label_mapping(self.model.config.id2label, self.model_id, backend_key=self.backend_key)
 
     def predict_fake_probability(self, image: Image.Image) -> Tuple[float, int, Optional[Dict[str, float]]]:
         import torch
         img = safe_to_rgb(ImageOps.exif_transpose(image) or image)
-        w, h = img.size
-        tile_size = 224
 
-        views = [img]
-        # Multi-view tiling: if image is large, take up to 4 native-resolution 224x224 crops
-        if w >= tile_size and h >= tile_size:
-            c_x = (w - tile_size) // 2
-            c_y = (h - tile_size) // 2
-            views.append(img.crop((c_x, c_y, c_x + tile_size, c_y + tile_size)))
-
-            if c_x > 0 or c_y > 0:
-                views.append(img.crop((0, 0, tile_size, tile_size)))
-
-            if w - tile_size > 0 or h - tile_size > 0:
-                views.append(img.crop((w - tile_size, h - tile_size, w, h)))
-
-            if w - tile_size > 0:
-                views.append(img.crop((w - tile_size, 0, w, tile_size)))
-
-        views = views[:5]
-        inputs = self.processor(images=views, return_tensors="pt")
+        # Standard full-image inference: AutoImageProcessor scales and normalizes the image to 224x224
+        # (Avoid multi-crop averaging which strips semantic context from 224px patches and dilutes AI probabilities)
+        inputs = self.processor(images=[img], return_tensors="pt")
         with torch.no_grad():
             outputs = self.model(**inputs)
-            logits = outputs.logits  # Shape (V, 2)
+            logits = outputs.logits[0]  # Shape (2,)
             probs = torch.softmax(logits, dim=-1)
 
         fake_idx = self.label_mapping["FAKE"]
         real_idx = self.label_mapping["REAL"]
 
-        fake_probs = probs[:, fake_idx]
-        avg_fake_prob = float(torch.mean(fake_probs).item())
-        avg_logits = {
-            "FAKE": float(torch.mean(logits[:, fake_idx]).item()),
-            "REAL": float(torch.mean(logits[:, real_idx]).item())
+        fake_prob = float(probs[fake_idx].item())
+        raw_logits = {
+            "FAKE": float(logits[fake_idx].item()),
+            "REAL": float(logits[real_idx].item())
         }
-        return avg_fake_prob, len(views), avg_logits
+        return fake_prob, 1, raw_logits
 
 
 class SmaugBackend(BaseClassifierBackend):
@@ -155,6 +201,7 @@ class SmaugBackend(BaseClassifierBackend):
     def __init__(self):
         self.detector = None
         self.crops = int(os.environ.get("SMAUG_CROPS", "1"))
+        self.label_mapping = {"FAKE": 1, "REAL": 0}
 
     def initialize(self, hf_token: Optional[str] = None):
         from huggingface_hub import snapshot_download
@@ -165,6 +212,7 @@ class SmaugBackend(BaseClassifierBackend):
         from smaug_image_detect import SmaugImageDetect
         logger.info(f"Loading Smaug detector from {model_dir} (crops={self.crops})...")
         self.detector = SmaugImageDetect.from_pretrained(model_dir)
+        self.label_mapping = {"FAKE": 1, "REAL": 0}
 
     def predict_fake_probability(self, image: Image.Image) -> Tuple[float, int, Optional[Dict[str, float]]]:
         img = safe_to_rgb(ImageOps.exif_transpose(image) or image)
@@ -231,7 +279,7 @@ class LegacyBackend(BaseClassifierBackend):
         self.processor = AutoImageProcessor.from_pretrained(self.model_id, token=hf_token)
         self.model = AutoModelForImageClassification.from_pretrained(self.model_id, token=hf_token)
         self.model.eval()
-        self.label_mapping = build_label_mapping(self.model.config.id2label, self.model_id)
+        self.label_mapping = build_label_mapping(self.model.config.id2label, self.model_id, backend_key=self.backend_key)
 
     def predict_fake_probability(self, image: Image.Image) -> Tuple[float, int, Optional[Dict[str, float]]]:
         import torch

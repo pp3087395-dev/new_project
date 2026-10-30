@@ -4,8 +4,8 @@
 Model Backend     : legacy (ViT AI Image Detector (umm-maybe / Baseline))
 Dataset Size      : 55 images (28 Real, 27 Fake)
    [!] WARNING: Dataset sample size is under 30 images (Real: 28, Fake: 27). Confidence intervals are wider.
-Average Latency   : 181.8 ms / image on CPU
-Peak Working RAM  : 879.4 MB
+Average Latency   : 193.5 ms / image on CPU
+Peak Working RAM  : 879.1 MB
 Cutoff Threshold  : 0.50 (Uncertain Band: +/-0.10)
 Uncertain Window  : [0.40, 0.60] -> INCONCLUSIVE
 --------------------------------------------------------------------------------

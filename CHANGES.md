@@ -152,3 +152,93 @@ npm run dev
   - `CLASSIFIER_UNCERTAIN_BAND=0.10`
   - `ALLOWED_ORIGINS=https://truthlens.vercel.app,http://localhost:5173`
 - Refer to the Step 9 Deployment Checklist before publishing to production.
+
+---
+
+## 8. Verdict-Inversion Diagnosis, Root Cause Evidence, and Architectural Fixes
+
+### 8.1 The Reported Bug
+Users reported that TruthLens inverted verdicts: labeling AI-generated images as REAL ("No signs of full AI generation") and real photographs as FAKE ("Likely fully AI-generated"). This inversion occurred across multiple images, indicating a systematic error rather than marginal statistical noise.
+
+### 8.2 Root Cause Analysis & Empirical Evidence
+
+Four distinct factors contributed to the perceived and actual verdict inversions:
+
+1. **Root Cause 1 — Multi-Crop Patch Spatial Dilution in SigLIP (`SigLIPBackend`):**
+   - *Mechanism:* The original `SigLIPBackend` implementation partitioned images larger than 224x224 into four 224x224 crops (corners and center) and averaged their softmax probabilities with the resized full-image probability.
+   - *Failure Mode:* On high-resolution synthetic images (e.g. portraits and environmental scenes), crops capturing background, clothing, or plain sky contained no generative facial or structural artifacts. The model assigned these crops near-zero fake probability ($p_{\text{fake}} \approx 0.001$). Averaging these uninformative crops with the subject crop dragged $p_{\text{fake}}$ on genuine AI images (such as `4-year-old boy.webp`) from **99.9% down to 20.0%**, directly causing the system to classify it as `REAL` ("No signs of full AI generation").
+   - *Code Location:* `backend/app/services/classifier.py`, former lines 180–230 (`SigLIPBackend.predict_fake_probability`).
+
+2. **Root Cause 2 — Legacy 2022 ViT Baseline Inversion on Modern Diffusion Images:**
+   - *Mechanism:* The `umm-maybe/AI-image-detector` model was trained in 2022 primarily on early VQGAN and early latent diffusion architectures. When evaluated on modern photorealistic generative diffusion images (Flux, Midjourney v6, SDXL), its feature activations completely inverted.
+   - *Evidence:* On authentic photographs such as `1.4.jpeg`, legacy ViT output $p_{\text{fake}} = 85.4\%$ (labeled FAKE), while on photorealistic AI portraits such as `a young woman photographed with soft lighting...webp`, it output $p_{\text{fake}} = 2.3\%$ (labeled REAL) and on `very pretty caucasian girl...webp` it output $p_{\text{fake}} = 4.0\%$ (labeled REAL).
+   - *Impact:* When the system was configured with `CLASSIFIER_BACKEND=legacy`, it produced systematic bidirectional inversion on modern test data.
+
+3. **Root Cause 3 — Fragile Dynamic Label Mapping & Implicit Output Polarity:**
+   - *Mechanism:* `build_label_mapping` previously relied on loose substring searching across `model.config.id2label` strings (`"ai"` in label text could falsely match substring tokens, e.g. `"portrait"` or `"chair"`). Additionally, Smaug outputs `{0: 'LABEL_0', 1: 'LABEL_1'}` through a scalar sigmoid head where higher values represent the synthetic class ($P(\text{AI})$), which was not explicitly documented or constrained against an authoritative per-backend specification.
+   - *Code Location:* `backend/app/services/classifier.py`, former lines 50–75.
+
+4. **Root Cause 4 — Eval Harness Cache Masking & Automatic Cache Loading:**
+   - *Mechanism:* In `backend/eval/run_eval.py`, the cache check was written as:
+     `if not no_cache and (use_cache or cache_file.exists()):`
+     Because `cache_smaug.json` and `cache_legacy.json` were pre-committed to the repository, running `python eval/run_eval.py` without flags automatically loaded stale cached predictions without running model inference. The cache files lacked metadata regarding model version, mapping version, or preprocessing mode, hiding the runtime multi-crop dilution and legacy baseline flaws during offline evaluation.
+
+---
+
+### 8.3 The Fixes Applied
+
+1. **Authoritative Single Source of Truth (`BACKEND_LABEL_SPECS`):**
+   - Created `BACKEND_LABEL_SPECS` defining explicit, exact-match token sets for each backend:
+     - `siglip`: FAKE $\to$ `{"ai"}`, REAL $\to$ `{"hum"}`
+     - `legacy`: FAKE $\to$ `{"artificial"}`, REAL $\to$ `{"human"}`
+     - `smaug`: Scalar sigmoid where higher values represent synthetic probability; canonical mapping `{"FAKE": 1, "REAL": 0}`.
+   - `build_label_mapping` resolves labels against these authoritative specs and raises an explicit `ValueError` at startup if any label is ambiguous or unmapped, preventing silent inversions.
+
+2. **Native Full-Image Semantic Inference in `SigLIPBackend`:**
+   - Removed the destructive 224x224 patch-averaging loop.
+   - Standardized on native `processor(images=[img], return_tensors="pt")` full-image normalization, allowing the Vision Transformer's self-attention layers to analyze global semantic composition and full-scene synthesis artifacts.
+
+3. **Strict, Versioned Eval Cache Invalidation:**
+   - Updated `run_eval.py` cache key format to:
+     `cache_{backend}_{sanitized_model}_{mapping_version}_{prep}.json`
+     (e.g., `cache_siglip_ateeqq_ai-vs-human-image-detector_v2_canonical_full_img.json`).
+   - Enforced that caches are **only** loaded when `--use-cache` is explicitly provided and `--no-cache` is not set.
+   - Included structured JSON metadata with backend key, model ID, mapping version, and timestamp in all saved caches.
+
+4. **Model Regression Test Suite:**
+   - Added `backend/tests/test_model_regression.py` marked `@pytest.mark.model`:
+     - `test_smaug_known_real_and_ai_verdict`: Asserts known real photo produces $p_{\text{fake}} < 0.40$ (REAL) and known AI image produces $p_{\text{fake}} > 0.60$ (FAKE).
+     - `test_siglip_known_real_and_ai_verdict`: Asserts known real photo produces $p_{\text{fake}} < 0.30$ (REAL) and known AI image produces $p_{\text{fake}} > 0.50$ (FAKE).
+     - `test_api_verdict_equals_direct_classifier_verdict`: Verifies live FastAPI endpoint `/api/analyze/image` produces identical `predicted_class`, `predicted_label_description`, and probabilities as direct classifier service execution.
+
+---
+
+### 8.4 Evaluation Results: Fresh Evaluation on 55 Benchmark Images (No Cache)
+
+The entire 55-image benchmark dataset (28 authentic photographs, 27 synthetic AI images) was re-evaluated from scratch with `--no-cache`:
+
+| Metric | Legacy ViT (`umm-maybe`) | SigLIP (`Ateeqq`) [Fixed] | Smaug (`Abacus AI`) [Default] |
+| :--- | :---: | :---: | :---: |
+| **Model Size / Head** | 85M ViT (Softmax) | 92.9M SigLIP (Softmax) | 439M ViT (Sigmoid) |
+| **Preprocessing** | Full Image (224x224) | Full Image (224x224) | 2048px Cap + Single Crop |
+| **Cutoff Threshold** | 0.50 ($\pm 0.10$) | 0.50 ($\pm 0.10$) | 0.50 ($\pm 0.10$) |
+| **Conclusive Accuracy** | 56.52% (26/46) | 76.36% (42/55) | **100.00% (54/54)** |
+| **Strict Accuracy** | 47.27% (26/55) | 76.36% (42/55) | **98.18% (54/55)** |
+| **Inconclusive Rate** | 16.36% (9/55) | 0.00% (0/55) | **1.82% (1/55)** |
+| **Real Photos Called Fake (FPR)** | 21.43% (6/28) | 28.57% (8/28) | **0.00% (0/28)** |
+| **FPR 95% Wilson CI** | [10.2%, 39.5%] | [15.2%, 47.1%] | **[0.0%, 12.1%]** |
+| **AI Images Missed as Real (FNR)** | 51.85% (14/27) | 18.52% (5/27) | **0.00% (0/27)** |
+| **FNR 95% Wilson CI** | [34.0%, 69.3%] | [8.2%, 36.7%] | **[0.0%, 12.5%]** |
+| **Average Latency / Image** | ~193 ms | ~219 ms | ~2454 ms |
+| **Peak Process RAM** | ~879 MB | ~863 MB | ~2524 MB |
+
+### 8.5 Verification Summary
+- **Fast Unit Tests (`pytest -m "not model"`):** 43 passed, 0 failed.
+- **Model Regression Tests (`pytest -m "model"`):** 3 passed, 0 failed.
+- **Label Mapping Unit Tests (`test_label_mapping.py`):** 9 passed, 0 failed.
+- **Frontend Linter (`npm run lint`):** 0 warnings, 0 errors.
+- **Frontend Production Build (`npm run build`):** Built cleanly in 3.16s without warnings.
+- **Live Endpoint Verification:** Verified on live FastAPI server:
+  - Real photo (`1.1.jpeg`): $p_{\text{fake}} = 0.02\%$ $\to$ `REAL` ("No signs of full AI generation").
+  - AI image (`1990s beautiful blonde Supergirl.webp`): $p_{\text{fake}} = 99.96\%$ $\to$ `FAKE` ("Likely fully AI-generated").
+
