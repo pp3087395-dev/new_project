@@ -1,8 +1,8 @@
-import type { 
-  AnalysisResult, 
-  ResultCategory, 
-  EvidenceItem, 
-  SampleMedia 
+import type {
+  AnalysisResult,
+  ResultCategory,
+  EvidenceItem,
+  SampleMedia
 } from '../types';
 
 export interface AnalysisProgressCallback {
@@ -71,7 +71,7 @@ export const analysisService = {
    * Comprehensive health check.
    * Reports server status, model loading progress ('loading' | 'ready' | 'error'), and active model name.
    */
-  async checkBackendHealth(timeoutMs = 4000): Promise<{
+  async checkBackendHealth(timeoutMs = 10000): Promise<{
     isOnline: boolean;
     modelStatus: 'ready' | 'loading' | 'error' | 'unavailable' | 'unknown';
     modelName?: string;
@@ -304,17 +304,17 @@ export const analysisService = {
       if (provenance) {
         evidence.push({
           id: 'ev-provenance-clues',
-          title: provenance.aiSourceDeclared 
-            ? 'Provenance Clues: AI Source / Editing Declared in Metadata' 
+          title: provenance.aiSourceDeclared
+            ? 'Provenance Clues: AI Source / Editing Declared in Metadata'
             : 'Provenance Clues: Metadata & Container Inspection',
           category: 'metadata_compression',
           severity: provenance.aiSourceDeclared ? 'medium' : 'info',
           score: provenance.aiSourceDeclared ? 75 : 20,
           summary: provenance.aiSourceDeclared
             ? `Metadata declared: ${provenance.declaredSourceType || provenance.toolStrings.join(', ') || 'AI editing marker'}.`
-            : (provenance.toolStrings.length > 0 
-                ? `Tool markers: ${provenance.toolStrings.join(', ')}.` 
-                : (provenance.notes.length > 0 ? provenance.notes[0] : 'No provenance clues found.')),
+            : (provenance.toolStrings.length > 0
+              ? `Tool markers: ${provenance.toolStrings.join(', ')}.`
+              : (provenance.notes.length > 0 ? provenance.notes[0] : 'No provenance clues found.')),
           details: [
             ...provenance.notes,
             'Provenance clues are auxiliary metadata indicators and never alter the neural classifier verdict.'
@@ -340,8 +340,8 @@ export const analysisService = {
       // 3. Metadata Evidence
       evidence.push({
         id: 'ev-exif-headers',
-        title: backendData.metadata_analysis.has_exif 
-          ? `Embedded EXIF Metadata Detected (${exifCount} tags)` 
+        title: backendData.metadata_analysis.has_exif
+          ? `Embedded EXIF Metadata Detected (${exifCount} tags)`
           : 'EXIF Metadata Stripped or Absent',
         category: 'metadata_compression',
         severity: backendData.metadata_analysis.has_exif ? 'clean' : 'medium',
@@ -380,13 +380,13 @@ export const analysisService = {
         fileSizeFormatted: backendData.file_size_formatted,
         fileSizeBytes: backendData.file_size_bytes,
         mediaUrl,
-        analyzedAt: new Date().toLocaleString('en-US', { 
-          year: 'numeric', 
-          month: 'short', 
-          day: 'numeric', 
-          hour: '2-digit', 
-          minute: '2-digit', 
-          second: '2-digit' 
+        analyzedAt: new Date().toLocaleString('en-US', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit'
         }),
         status: 'completed',
         mode: 'genuine_signal_processing',
