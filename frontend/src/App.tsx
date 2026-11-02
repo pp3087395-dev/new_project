@@ -1,134 +1,119 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Navbar } from './components/Navbar';
-import { Hero } from './components/Hero';
-import { Features } from './components/Features';
-import { HowItWorks } from './components/HowItWorks';
-import { ResponsibleAI } from './components/ResponsibleAI';
-import { AnalyzeMedia } from './components/AnalyzeMedia';
-import { ResultsDashboard } from './components/ResultsDashboard';
-import { ExplainabilityGuide } from './components/ExplainabilityGuide';
-import { HistoryDashboard } from './components/HistoryDashboard';
-import { ReportModal } from './components/ReportModal';
 import { Footer } from './components/Footer';
-import { historyService } from './services/historyService';
+import { HomePage } from './pages/HomePage';
+import { HowItWorksPage } from './pages/HowItWorksPage';
+import { EvidenceGuidePage } from './pages/EvidenceGuidePage';
+import { AuditHistoryPage } from './pages/AuditHistoryPage';
+import { AnalyzePage } from './pages/AnalyzePage';
 import type { AnalysisResult } from './types';
 
+function normalizePath(pathname: string): string {
+  const clean = pathname.toLowerCase().replace(/\/+$/, '') || '/';
+  if (clean === '/home') return '/';
+  if (['/', '/how-it-works', '/evidence-guide', '/audit-history', '/analyze'].includes(clean)) {
+    return clean;
+  }
+  return '/';
+}
+
 export function App() {
-  const [activeTab, setActiveTab] = useState<string>('landing');
+  const [currentPath, setCurrentPath] = useState<string>(() => 
+    normalizePath(window.location.pathname)
+  );
   const [currentResult, setCurrentResult] = useState<AnalysisResult | null>(null);
   const [preSelectedSampleId, setPreSelectedSampleId] = useState<string | null>(null);
-  const [showReportModal, setShowReportModal] = useState<boolean>(false);
 
-  // When an analysis completes in AnalyzeMedia
+  // Sync with browser back/forward buttons
+  useEffect(() => {
+    const handlePopState = () => {
+      setCurrentPath(normalizePath(window.location.pathname));
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  const navigate = (path: string) => {
+    const normalized = normalizePath(path);
+    if (window.location.pathname !== normalized) {
+      window.history.pushState({}, '', normalized);
+    }
+    setCurrentPath(normalized);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleSelectSample = (sampleId: string) => {
+    setPreSelectedSampleId(sampleId);
+    setCurrentResult(null);
+    navigate('/analyze');
+  };
+
+  const handleNewAnalysis = () => {
+    setCurrentResult(null);
+    setPreSelectedSampleId(null);
+    navigate('/analyze');
+  };
+
   const handleAnalysisComplete = (result: AnalysisResult) => {
     setCurrentResult(result);
-    historyService.saveResult(result);
-    setActiveTab('results');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // When user clicks "Load in Studio" on the scanner demo
-  const handleSelectSampleFromHero = (sampleId: string) => {
-    setPreSelectedSampleId(sampleId);
-    setActiveTab('analyze');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  // When user clicks "Analyze Media" button from anywhere
-  const handleNewAnalysis = () => {
-    setPreSelectedSampleId(null);
-    setActiveTab('analyze');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  // When user clicks an entry in the History dashboard
   const handleSelectFromHistory = (result: AnalysisResult) => {
     setCurrentResult(result);
-    setActiveTab('results');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    navigate('/analyze');
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#070A13] text-slate-100">
+    <div className="min-h-screen flex flex-col bg-slate-50 text-slate-900 forensic-grid-light">
       
-      {/* Navigation Header */}
+      {/* Top Global Navigation Bar */}
       <Navbar
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-        onNewAnalysis={handleNewAnalysis}
+        currentPath={currentPath}
+        onNavigate={navigate}
       />
 
-      {/* Main View Router */}
+      {/* Main Dedicated Page Routing */}
       <main className="flex-1">
-        {activeTab === 'landing' && (
-          <div>
-            <Hero
-              onStartAnalysis={handleNewAnalysis}
-              onLearnMore={() => {
-                const el = document.getElementById('how-it-works-section');
-                if (el) el.scrollIntoView({ behavior: 'smooth' });
-                else setActiveTab('how-it-works');
-              }}
-              onSelectSample={handleSelectSampleFromHero}
-            />
-            <Features />
-            <HowItWorks onStartAnalysis={handleNewAnalysis} />
-            <ResponsibleAI />
-          </div>
+        {currentPath === '/' && (
+          <HomePage
+            onNavigate={navigate}
+            onSelectSample={handleSelectSample}
+          />
         )}
 
-        {activeTab === 'analyze' && (
-          <div className="py-8">
-            <AnalyzeMedia
-              onAnalysisComplete={handleAnalysisComplete}
-              preSelectedSampleId={preSelectedSampleId}
-            />
-          </div>
+        {currentPath === '/how-it-works' && (
+          <HowItWorksPage
+            onNavigate={navigate}
+          />
         )}
 
-        {activeTab === 'results' && currentResult && (
-          <div className="py-8">
-            <ResultsDashboard
-              result={currentResult}
-              onNewAnalysis={handleNewAnalysis}
-              onOpenReport={() => setShowReportModal(true)}
-            />
-          </div>
+        {currentPath === '/evidence-guide' && (
+          <EvidenceGuidePage
+            onNavigate={navigate}
+          />
         )}
 
-        {activeTab === 'how-it-works' && (
-          <div className="py-8">
-            <HowItWorks onStartAnalysis={handleNewAnalysis} />
-            <ResponsibleAI />
-          </div>
+        {currentPath === '/audit-history' && (
+          <AuditHistoryPage
+            onNavigate={navigate}
+            onSelectResult={handleSelectFromHistory}
+          />
         )}
 
-        {activeTab === 'evidence' && (
-          <div className="py-8">
-            <ExplainabilityGuide />
-          </div>
-        )}
-
-        {activeTab === 'history' && (
-          <div className="py-8">
-            <HistoryDashboard
-              onSelectResult={handleSelectFromHistory}
-              onNewAnalysis={handleNewAnalysis}
-            />
-          </div>
+        {currentPath === '/analyze' && (
+          <AnalyzePage
+            currentResult={currentResult}
+            onAnalysisComplete={handleAnalysisComplete}
+            onNewAnalysis={handleNewAnalysis}
+            preSelectedSampleId={preSelectedSampleId}
+          />
         )}
       </main>
 
-      {/* Printable / Downloadable Audit Report Modal */}
-      {showReportModal && currentResult && (
-        <ReportModal
-          result={currentResult}
-          onClose={() => setShowReportModal(false)}
-        />
-      )}
-
-      {/* Footer */}
-      <Footer setActiveTab={setActiveTab} />
+      {/* Consistent System Footer */}
+      <Footer onNavigate={navigate} />
 
     </div>
   );

@@ -57,7 +57,7 @@ export const AnalyzeMedia: FC<AnalyzeMediaProps> = ({
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Step 7 Backend Polling State
+  // Backend Polling & Health State
   const [backendStatus, setBackendStatus] = useState<BackendStatus>('checking');
   const [modelName, setModelName] = useState<string>('Smaug AI Image Detector');
   const [pollSecondsElapsed, setPollSecondsElapsed] = useState<number>(0);
@@ -66,15 +66,15 @@ export const AnalyzeMedia: FC<AnalyzeMediaProps> = ({
   const runHealthCheck = useRef<() => void>(() => {});
   const backendUrl = analysisService.getBackendUrl();
 
-  // Polling loop: probe /api/ping (60s timeout, 5s retry), then /api/health for model readiness
+  // Polling loop: probe /api/ping (60s max wait, 5s retry), then /api/health for model readiness
   useEffect(() => {
     let isCancelled = false;
     let timerId: any = null;
     let secondsInterval: any = null;
     const startTime = Date.now();
-    const MAX_WAIT_MS = 60000; // 60s max wait for cold start
-    const PING_INTERVAL_MS = 5000; // 5s retry
-    const HEALTH_INTERVAL_MS = 3000; // 3s while model loading
+    const MAX_WAIT_MS = 60000;
+    const PING_INTERVAL_MS = 5000;
+    const HEALTH_INTERVAL_MS = 3000;
 
     secondsInterval = setInterval(() => {
       if (!isCancelled) {
@@ -121,7 +121,6 @@ export const AnalyzeMedia: FC<AnalyzeMediaProps> = ({
 
       if (health.modelStatus === 'loading') {
         setBackendStatus('model_loading');
-        // Continue checking health until model is ready
         timerId = setTimeout(poll, HEALTH_INTERVAL_MS);
       } else if (health.modelStatus === 'ready') {
         setBackendStatus('online');
@@ -179,7 +178,7 @@ export const AnalyzeMedia: FC<AnalyzeMediaProps> = ({
     const isVideo = file.type.startsWith('video') || file.name.match(/\.(mp4|mov|webm)$/i);
 
     if (isVideo) {
-      setErrorMessage('Video frame analysis is scheduled for Phase 4. Currently, image forensics (2D-FFT and metadata inspection) is active.');
+      setErrorMessage('Video frame analysis is scheduled for Phase 4. Currently, image forensics (2D-FFT and EXIF metadata inspection) is active.');
       return;
     }
 
@@ -262,114 +261,120 @@ export const AnalyzeMedia: FC<AnalyzeMediaProps> = ({
   };
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8">
+    <div className="max-w-4xl mx-auto px-4 py-6">
       
-      {/* Page Title */}
-      <div className="text-center mb-8">
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono font-medium bg-cyan-950/60 text-cyan-300 border border-cyan-800/40 mb-3">
-          <Scan className="w-3.5 h-3.5" />
-          <span>Forensic Upload Studio</span>
+      {/* Header Section */}
+      <div className="text-center mb-9">
+        <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-mono bg-blue-100 text-blue-900 border border-blue-300 font-extrabold mb-3 shadow-2xs">
+          <Scan className="w-3.5 h-3.5 text-blue-600" />
+          <span>FORENSIC ACQUISITION CONSOLE</span>
         </div>
-        <h1 className="text-3xl sm:text-4xl font-bold text-white tracking-tight font-heading mb-3">
-          Upload Image for Forensics & 2D-FFT Analysis
+        <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-slate-950 tracking-tight mb-3 font-sans">
+          Upload Image for Forensics & 2D-FFT Inspection
         </h1>
-        <p className="text-slate-400 text-sm sm:text-base max-w-2xl mx-auto">
-          Submit images for mathematical 2D Fast Fourier Transform inspection and EXIF provenance extraction. Processing runs in-memory with client-side privacy safeguards.
+        <p className="text-slate-700 text-base max-w-2xl mx-auto leading-relaxed font-medium">
+          Staged images are analyzed for mathematical 2D Fast Fourier Transform frequency signatures, Vision Transformer patch activations, and EXIF camera provenance.
         </p>
       </div>
 
-      {/* Backend Connectivity Status Banner (Step 7: Waking up, Model Loading, Online, Offline) */}
-      <div className={`mb-6 p-4 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs transition-all ${
+      {/* Backend Connectivity Status Banner */}
+      <div className={`mb-6 p-4 rounded-xl border-2 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs shadow-sm transition-colors ${
         backendStatus === 'online'
-          ? 'bg-emerald-950/30 border-emerald-500/40 text-emerald-300'
+          ? 'bg-emerald-50/80 border-emerald-300 text-emerald-900'
           : backendStatus === 'model_loading'
-          ? 'bg-sky-950/30 border-sky-500/40 text-sky-300'
+          ? 'bg-blue-50/80 border-blue-300 text-blue-900'
           : backendStatus === 'waking_up' || backendStatus === 'checking'
-          ? 'bg-amber-950/30 border-amber-500/40 text-amber-300'
-          : 'bg-rose-950/30 border-rose-500/40 text-rose-300'
+          ? 'bg-amber-50/80 border-amber-300 text-amber-900'
+          : 'bg-rose-50/80 border-rose-300 text-rose-900'
       }`}>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5">
           {backendStatus === 'online' && (
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shrink-0"></span>
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-600 animate-pulse shrink-0"></span>
           )}
           {backendStatus === 'model_loading' && (
-            <Loader2 className="w-4 h-4 text-sky-400 animate-spin shrink-0" />
+            <Loader2 className="w-4 h-4 text-blue-600 animate-spin shrink-0" />
           )}
           {(backendStatus === 'waking_up' || backendStatus === 'checking') && (
-            <Loader2 className="w-4 h-4 text-amber-400 animate-spin shrink-0" />
+            <Loader2 className="w-4 h-4 text-amber-600 animate-spin shrink-0" />
           )}
           {backendStatus === 'offline' && (
-            <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
+            <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
           )}
 
-          <div>
+          <div className="font-mono text-xs leading-relaxed font-medium">
             {backendStatus === 'online' && (
               <span>
-                <strong>System Online & Ready:</strong> Connected to FastAPI backend with <span className="font-semibold">{modelName}</span> and 2D-FFT forensics.
+                <strong className="text-slate-950 font-bold">System Online:</strong> FastAPI server connected with <span className="text-emerald-700 font-bold">{modelName}</span> and 2D-FFT NumPy engine.
               </span>
             )}
             {backendStatus === 'model_loading' && (
               <span>
-                <strong>Server Online, Model Loading:</strong> FastAPI server is active; AI classification model weights are initializing on CPU ({pollSecondsElapsed}s elapsed)...
+                <strong className="text-slate-950 font-bold">Model Initializing:</strong> Server reachable; Vision Transformer model weights loading on CPU ({pollSecondsElapsed}s elapsed)...
               </span>
             )}
             {(backendStatus === 'waking_up' || backendStatus === 'checking') && (
               <span>
-                <strong>Waking up server...</strong> Cold start on Render free tier takes 30–50s ({pollSecondsElapsed}s / 60s max, retrying every 5s).
+                <strong className="text-slate-950 font-bold">Connecting to Backend:</strong> Probing server instance ({pollSecondsElapsed}s / 60s max, retrying every 5s)...
               </span>
             )}
             {backendStatus === 'offline' && (
               <span>
-                <strong>FastAPI Backend Offline:</strong> Unable to connect to <code className="bg-black/40 px-1 py-0.5 rounded font-mono">{backendUrl}</code> after 60s. Start locally via <code className="bg-black/40 px-1 py-0.5 rounded font-mono">python -m uvicorn app.main:app</code> or verify your cloud deployment.
+                <strong className="text-slate-950 font-bold">Backend Offline:</strong> Unable to connect to <code className="bg-white px-1.5 py-0.5 rounded border border-rose-200 text-slate-900 font-bold">{backendUrl}</code>. Start locally via <code className="bg-white px-1.5 py-0.5 rounded border border-rose-200 text-slate-900 font-bold">python -m uvicorn app.main:app</code>.
               </span>
             )}
           </div>
         </div>
 
-        <div className="flex items-center gap-2.5 self-end sm:self-auto shrink-0">
+        <div className="flex items-center gap-2.5 self-end sm:self-auto shrink-0 font-mono text-[11px] font-bold">
           {backendStatus === 'offline' && (
             <button
               onClick={() => runHealthCheck.current()}
-              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-rose-900/40 hover:bg-rose-900/70 border border-rose-500/50 text-rose-200 transition-colors text-xs font-medium cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-600 text-white hover:bg-rose-700 transition-colors cursor-pointer shadow-xs"
             >
               <RefreshCw className="w-3 h-3" />
               <span>Retry Connection</span>
             </button>
           )}
-          <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400">
-            API: {backendUrl.replace(/^https?:\/\//, '')}
+          <span className="text-slate-600 uppercase tracking-wider">
+            PORT: {backendUrl.replace(/^https?:\/\//, '')}
           </span>
         </div>
       </div>
 
       {/* Error Alert */}
       {errorMessage && (
-        <div className="mb-6 p-4 rounded-xl bg-red-950/50 border border-red-500/50 flex items-center justify-between gap-3 text-xs text-red-200">
+        <div className="mb-6 p-4 rounded-xl bg-rose-50 border-2 border-rose-300 flex items-center justify-between gap-3 text-xs text-rose-900 font-mono shadow-sm">
           <div className="flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
-            <span>{errorMessage}</span>
+            <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
+            <span className="font-bold">{errorMessage}</span>
           </div>
           <button 
             onClick={() => setErrorMessage(null)}
-            className="text-red-400 hover:text-white"
+            className="text-rose-700 hover:text-rose-950 p-1 cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
       )}
 
-      {/* Upload Zone / Media Preview Card */}
+      {/* Upload Zone / Media Staging Console */}
       {!previewUrl ? (
         <div
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
-          className={`relative rounded-2xl border-2 border-dashed transition-all duration-200 p-8 sm:p-12 text-center glass-card ${
+          className={`relative rounded-2xl border-2 border-dashed transition-all p-10 sm:p-14 text-center bg-white shadow-sm ${
             isDragging
-              ? 'border-cyan-400 bg-cyan-950/20 scale-[1.01]'
-              : 'border-slate-800 hover:border-slate-700 bg-slate-900/40'
+              ? 'border-blue-500 bg-blue-50/40 ring-4 ring-blue-500/10'
+              : 'border-slate-300 hover:border-blue-500 hover:shadow-md'
           }`}
         >
+          {/* Reticle Corner Accents */}
+          <div className="reticle-corner-blue-tl" />
+          <div className="reticle-corner-blue-tr" />
+          <div className="reticle-corner-blue-bl" />
+          <div className="reticle-corner-blue-br" />
+
           <input
             ref={fileInputRef}
             type="file"
@@ -379,58 +384,64 @@ export const AnalyzeMedia: FC<AnalyzeMediaProps> = ({
             id="media-file-input"
           />
 
-          <div className="w-16 h-16 rounded-2xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-cyan-500/5">
+          <div className="w-16 h-16 rounded-2xl bg-blue-50 border-2 border-blue-200 text-blue-600 flex items-center justify-center mx-auto mb-4 shadow-sm">
             <UploadCloud className="w-8 h-8" />
           </div>
 
-          <h3 className="text-lg font-bold text-white mb-2 font-heading">
-            Drag and drop your image or video here
+          <h3 className="text-2xl sm:text-3xl font-black text-slate-950 mb-2 font-sans">
+            Drag and drop media file for forensic inspection
           </h3>
 
-          <p className="text-slate-400 text-xs sm:text-sm max-w-md mx-auto mb-6">
-            Supports JPG, PNG, WEBP (up to 15MB) and MP4, MOV, WEBM videos (up to 50MB).
+          <p className="text-slate-700 text-sm sm:text-base max-w-md mx-auto mb-6 font-mono font-medium">
+            Supported: JPG, PNG, WEBP (up to 15MB). In-memory stream processing.
           </p>
 
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-slate-800 hover:bg-slate-700 border border-slate-700/80 hover:border-cyan-500/40 transition-all shadow-md cursor-pointer"
+            className="inline-flex items-center gap-2.5 px-8 py-3.5 rounded-xl text-base font-bold text-white bg-blue-600 hover:bg-blue-700 transition-all cursor-pointer shadow-md shadow-blue-500/25 active:scale-95"
           >
-            <FileUp className="w-4 h-4 text-cyan-400" />
+            <FileUp className="w-5 h-5 text-white" />
             <span>Browse Local Files</span>
           </button>
 
-          <div className="mt-8 pt-6 border-t border-slate-800/80 flex items-center justify-center gap-4 text-xs text-slate-500">
-            <span className="flex items-center gap-1">
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" /> Safe In-Memory Processing
+          <div className="mt-8 pt-5 border-t border-slate-200 flex items-center justify-center gap-4 text-xs font-mono text-slate-600 font-bold">
+            <span className="flex items-center gap-1.5 text-emerald-700">
+              <ShieldCheck className="w-4 h-4" /> Client-Side Privacy
             </span>
             <span>•</span>
-            <span>No Data Retention</span>
+            <span>No Persistent Storage</span>
           </div>
         </div>
       ) : (
-        /* Preview Card with Controls */
-        <div className="glass-card rounded-2xl border border-slate-800 overflow-hidden bg-slate-900/60 p-5 shadow-xl">
-          <div className="flex items-center justify-between pb-4 border-b border-slate-800">
+        /* Preview Card with Forensic Framing & Telemetry */
+        <div className="rounded-2xl border-2 border-slate-200 bg-white p-5 shadow-xl">
+          <div className="flex items-center justify-between pb-3 border-b border-slate-200">
             <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-cyan-400"></span>
-              <span className="text-xs font-mono text-slate-300 font-semibold uppercase">
-                {selectedSample ? 'Pre-Loaded Demonstration Sample' : 'Custom Upload Staged'}
+              <span className="w-2.5 h-2.5 rounded-full bg-blue-600 animate-pulse"></span>
+              <span className="text-xs font-mono text-slate-950 font-extrabold uppercase">
+                {selectedSample ? 'DEMO DATASET STAGED' : 'MEDIA ARTIFACT STAGED FOR ANALYSIS'}
               </span>
             </div>
             {!isAnalyzing && (
               <button
                 onClick={handleRemoveMedia}
-                className="flex items-center gap-1 text-xs text-slate-400 hover:text-red-400 px-2 py-1 rounded hover:bg-red-950/20 transition-colors cursor-pointer"
+                className="flex items-center gap-1.5 text-xs font-mono text-slate-700 hover:text-rose-600 px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-rose-50 border border-slate-200 transition-colors cursor-pointer font-bold"
               >
-                <X className="w-4 h-4" />
+                <X className="w-3.5 h-3.5" />
                 <span>Remove Media</span>
               </button>
             )}
           </div>
 
-          {/* Media Player / Image Display */}
-          <div className="relative aspect-video w-full max-h-[380px] bg-black rounded-xl overflow-hidden my-4 flex items-center justify-center border border-slate-800">
+          {/* Media Player / Image Display Frame */}
+          <div className="relative aspect-video w-full max-h-[380px] bg-slate-950 rounded-xl overflow-hidden my-3 flex items-center justify-center border border-slate-800 shadow-inner">
+            {/* Reticles */}
+            <div className="reticle-corner-blue-tl" />
+            <div className="reticle-corner-blue-tr" />
+            <div className="reticle-corner-blue-bl" />
+            <div className="reticle-corner-blue-br" />
+
             {fileType === 'video' ? (
               <video
                 src={previewUrl}
@@ -441,32 +452,32 @@ export const AnalyzeMedia: FC<AnalyzeMediaProps> = ({
             ) : (
               <img
                 src={previewUrl}
-                alt="Uploaded media preview"
+                alt="Staged media preview"
                 className="w-full h-full object-contain"
               />
             )}
 
-            {/* Scanning animation during analysis */}
+            {/* Scanning animation during active analysis */}
             {isAnalyzing && (
-              <div className="absolute inset-0 bg-slate-950/50 backdrop-blur-xs flex flex-col items-center justify-center p-6">
-                <div className="animate-scan-line"></div>
-                <div className="w-14 h-14 rounded-2xl bg-cyan-950/80 border border-cyan-500/50 flex items-center justify-center text-cyan-400 mb-4 animate-spin">
-                  <Scan className="w-7 h-7" />
+              <div className="absolute inset-0 bg-[#101311]/85 backdrop-blur-xs flex flex-col items-center justify-center p-6">
+                <div className="animate-forensic-scan"></div>
+                <div className="w-12 h-12 rounded-md bg-[#1D2420] border border-[#80B9A5]/50 flex items-center justify-center text-[#80B9A5] mb-3">
+                  <Scan className="w-6 h-6 animate-pulse" />
                 </div>
-                <div className="text-cyan-300 font-mono font-bold text-sm tracking-wider mb-1">
-                  ANALYSIS IN PROGRESS ({progressPct}%)
+                <div className="text-[#80B9A5] font-mono font-semibold text-xs tracking-wider mb-1">
+                  INFERENCE IN PROGRESS // {progressPct}%
                 </div>
-                <div className="text-slate-300 text-xs text-center max-w-sm mb-2">
+                <div className="text-[#F0F2ED] text-xs text-center max-w-sm mb-1.5 font-mono">
                   {progressStage}
                 </div>
-                <div className="text-slate-400 text-[11px] text-center max-w-sm mb-4 italic">
-                  Note: The first analysis after a cold start can take longer.
+                <div className="text-[#707B72] text-[10px] text-center max-w-sm mb-4 font-mono">
+                  First execution after server cold start may take 15–30s on CPU.
                 </div>
                 
                 {/* Progress Bar */}
-                <div className="w-full max-w-md bg-slate-800 rounded-full h-2 overflow-hidden border border-slate-700">
+                <div className="w-full max-w-sm bg-[#1D2420] rounded-full h-1.5 overflow-hidden border border-[#303A33]">
                   <div
-                    className="bg-gradient-to-r from-cyan-400 to-violet-500 h-full transition-all duration-300 rounded-full"
+                    className="bg-[#80B9A5] h-full transition-all duration-300"
                     style={{ width: `${progressPct}%` }}
                   ></div>
                 </div>
@@ -474,45 +485,43 @@ export const AnalyzeMedia: FC<AnalyzeMediaProps> = ({
             )}
           </div>
 
-          {/* Metadata Footer */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pt-2">
-            <div>
-              <h4 className="text-sm font-semibold text-white font-mono truncate max-w-sm">
+          {/* Staged File Technical Details & Action Button */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-2">
+            <div className="font-mono">
+              <h4 className="text-sm font-extrabold text-slate-950 truncate max-w-md">
                 {selectedFile?.name || selectedSample?.name}
               </h4>
-              <p className="text-xs text-slate-400 mt-0.5">
+              <p className="text-xs text-slate-600 mt-0.5 font-medium">
                 {selectedFile
                   ? `${(selectedFile.size / (1024 * 1024)).toFixed(2)} MB • ${selectedFile.type}`
-                  : `Preset Sample • ${selectedSample?.description}`}
+                  : `Preset Demonstration Asset • ${selectedSample?.description}`}
               </p>
             </div>
 
             {!isAnalyzing && (
               <button
                 onClick={handleStartAnalysis}
-                className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-cyan-500 via-blue-600 to-violet-600 hover:from-cyan-400 hover:to-violet-500 shadow-lg shadow-cyan-500/20 active:scale-95 transition-all cursor-pointer"
+                className="w-full sm:w-auto flex items-center justify-center gap-2.5 px-8 py-3.5 rounded-xl text-base font-bold text-white bg-blue-600 hover:bg-blue-700 transition-all cursor-pointer shadow-lg shadow-blue-500/25 active:scale-95"
               >
-                <Scan className="w-4 h-4" />
-                <span>Analyze Media</span>
-                <ArrowRight className="w-4 h-4 ml-1" />
+                <Scan className="w-5 h-5 text-white" />
+                <span>Run Forensic Analysis</span>
+                <ArrowRight className="w-5 h-5 ml-0.5 text-white" />
               </button>
             )}
           </div>
         </div>
       )}
 
-      {/* Preset Hackathon Test Samples Picker */}
-      <div className="mt-12">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h3 className="text-sm font-bold text-white uppercase tracking-wider font-mono flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-cyan-400" />
-              <span>Or Try with Curated Demonstration Samples</span>
-            </h3>
-            <p className="text-xs text-slate-400">
-              Ideal for testing different forensic heuristics instantly during hackathon evaluation.
-            </p>
-          </div>
+      {/* Preset Evaluation Test Samples Picker */}
+      <div className="mt-10 pt-8 border-t border-slate-200">
+        <div className="mb-4">
+          <h3 className="text-sm font-extrabold text-slate-950 uppercase tracking-wider font-mono flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-blue-600" />
+            <span>Curated Demonstration Datasets</span>
+          </h3>
+          <p className="text-xs text-slate-600 mt-0.5 font-mono">
+            Explore diverse forensic heuristics with pre-calibrated evaluation samples.
+          </p>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -522,40 +531,40 @@ export const AnalyzeMedia: FC<AnalyzeMediaProps> = ({
               <div
                 key={sample.id}
                 onClick={() => handleSelectSample(sample)}
-                className={`glass-card rounded-xl p-4 cursor-pointer border transition-all duration-200 text-left relative group ${
+                className={`rounded-xl p-3.5 cursor-pointer border-2 transition-all text-left bg-white relative shadow-2xs hover:shadow-md ${
                   isSelected
-                    ? 'border-cyan-400 bg-cyan-950/30 shadow-md shadow-cyan-500/10'
-                    : 'border-slate-800 hover:border-slate-700 bg-slate-900/30'
+                    ? 'border-blue-600 ring-4 ring-blue-500/10 bg-blue-50/20'
+                    : 'border-slate-200 hover:border-blue-400'
                 }`}
               >
-                <div className="relative aspect-video rounded-lg overflow-hidden mb-3 bg-black">
+                <div className="relative aspect-video rounded-lg overflow-hidden mb-2.5 bg-slate-950 border border-slate-800">
                   <img
                     src={sample.url}
                     alt={sample.name}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    className="w-full h-full object-cover"
                   />
-                  <div className="absolute top-2 left-2">
-                    <span className={`text-[10px] font-mono px-2 py-0.5 rounded font-semibold ${
+                  <div className="absolute top-1.5 left-1.5">
+                    <span className={`text-[10px] font-mono px-2 py-0.5 rounded font-extrabold shadow-sm ${
                       sample.expectedCategory === 'potentially_manipulated'
-                        ? 'bg-red-950/90 text-red-300 border border-red-500/40'
+                        ? 'bg-rose-950/90 text-rose-300 border border-rose-700'
                         : sample.expectedCategory === 'no_strong_signs'
-                        ? 'bg-emerald-950/90 text-emerald-300 border border-emerald-500/40'
-                        : 'bg-amber-950/90 text-amber-300 border border-amber-500/40'
+                        ? 'bg-emerald-950/90 text-emerald-300 border border-emerald-700'
+                        : 'bg-amber-950/90 text-amber-300 border border-amber-700'
                     }`}>
                       {sample.badge}
                     </span>
                   </div>
                   {sample.type === 'video' && (
-                    <div className="absolute bottom-2 right-2 bg-black/70 p-1 rounded text-cyan-400">
-                      <Play className="w-3.5 h-3.5" />
+                    <div className="absolute bottom-1.5 right-1.5 bg-slate-950/90 p-1 rounded text-sky-400">
+                      <Play className="w-3 h-3" />
                     </div>
                   )}
                 </div>
 
-                <h4 className="text-xs font-bold text-white font-mono truncate mb-1">
+                <h4 className="text-xs font-bold text-slate-950 font-mono truncate mb-1">
                   {sample.name}
                 </h4>
-                <p className="text-[11px] text-slate-400 line-clamp-2 leading-relaxed">
+                <p className="text-[11px] text-slate-600 line-clamp-2 leading-relaxed font-sans">
                   {sample.description}
                 </p>
               </div>

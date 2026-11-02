@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import type { FC } from 'react';
 import { 
-  Scan, 
   Activity, 
   Layers, 
   Eye, 
-  AlertTriangle 
+  AlertTriangle,
+  Scan
 } from 'lucide-react';
 
 interface LiveScannerDemoProps {
@@ -17,33 +17,47 @@ export const LiveScannerDemo: FC<LiveScannerDemoProps> = ({ onSelectSample }) =>
   const [isScanning, setIsScanning] = useState(true);
 
   return (
-    <div className="relative w-full max-w-2xl mx-auto rounded-2xl glass-card overflow-hidden shadow-2xl shadow-cyan-950/20 border border-slate-800">
+    <div className="relative w-full max-w-3xl mx-auto rounded-lg bg-[#171C19] border border-[#303A33] overflow-hidden shadow-2xl">
       
-      {/* Top Terminal Status Bar */}
-      <div className="px-4 py-3 bg-slate-900/90 border-b border-slate-800 flex items-center justify-between text-xs font-mono">
-        <div className="flex items-center gap-2">
-          <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse"></span>
-          <span className="text-slate-300 font-semibold tracking-wide">HEURISTIC FORENSIC VIEWER</span>
-          <span className="text-[10px] text-cyan-400 bg-cyan-950/60 px-2 py-0.5 rounded border border-cyan-800/40">
-            SIMULATED SCAN
+      {/* Top Telemetry Bar */}
+      <div className="px-4 py-2.5 bg-[#1D2420] border-b border-[#303A33] flex items-center justify-between text-xs font-mono">
+        <div className="flex items-center gap-2.5">
+          <span className="w-2 h-2 rounded-full bg-[#80B9A5] animate-pulse"></span>
+          <span className="text-[#F0F2ED] font-medium tracking-wider">FORENSIC RETICLE // WORKSTATION</span>
+          <span className="text-[10px] text-[#80B9A5] bg-[#101311] px-2 py-0.5 rounded border border-[#303A33]">
+            SAMPLE: GAN_V2
           </span>
         </div>
-        <div className="flex items-center gap-2 text-slate-400">
-          <Activity className="w-3.5 h-3.5 text-violet-400" />
-          <span>FPS: 60</span>
-          <span className="text-slate-600">|</span>
-          <span className="text-slate-400">2D-FFT: 512x512</span>
+        <div className="flex items-center gap-3 text-[#A0AAA1] text-[11px]">
+          <span className="hidden sm:inline">MATRIX: 512×512</span>
+          <span className="text-[#303A33] hidden sm:inline">|</span>
+          <span className="flex items-center gap-1 text-[#80B9A5]">
+            <Activity className="w-3 h-3" />
+            <span>RADIAL: ACTIVE</span>
+          </span>
         </div>
       </div>
 
-      {/* Main Preview Container with Scan Overlay */}
-      <div className="relative aspect-video w-full bg-slate-950 overflow-hidden flex items-center justify-center">
+      {/* Main Inspection Viewport with Framing Reticles */}
+      <div className="relative aspect-video w-full bg-[#101311] overflow-hidden flex items-center justify-center">
         
-        {/* Sample Image Base */}
+        {/* Four Corner Reticles */}
+        <div className="reticle-corner-tl" />
+        <div className="reticle-corner-tr" />
+        <div className="reticle-corner-bl" />
+        <div className="reticle-corner-br" />
+
+        {/* Center Crosshair Marker */}
+        <div className="absolute inset-0 pointer-events-none flex items-center justify-center opacity-30">
+          <div className="w-6 h-px bg-[#80B9A5]" />
+          <div className="h-6 w-px bg-[#80B9A5] absolute" />
+        </div>
+
+        {/* Sample Image */}
         <img
           src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=1000&q=80"
-          alt="Synthetic Demo Portrait"
-          className={`w-full h-full object-cover transition-all duration-500 ${
+          alt="Synthetic Forensic Portrait Sample"
+          className={`w-full h-full object-cover transition-all duration-300 ${
             activeLayer === 'frequency' 
               ? 'filter invert contrast-200 hue-rotate-180 brightness-75' 
               : activeLayer === 'gradient'
@@ -52,124 +66,125 @@ export const LiveScannerDemo: FC<LiveScannerDemoProps> = ({ onSelectSample }) =>
           }`}
         />
 
-        {/* Frequency Heatmap Matrix Simulation */}
+        {/* Layer 2: Frequency Heatmap Matrix Simulation */}
         {activeLayer === 'frequency' && (
-          <div className="absolute inset-0 bg-gradient-to-t from-violet-900/40 via-cyan-900/30 to-fuchsia-900/40 mix-blend-color-dodge pointer-events-none flex items-center justify-center">
-            <div className="w-64 h-64 border border-cyan-400/50 rounded-full animate-ping opacity-25"></div>
-            <div className="absolute font-mono text-[10px] text-cyan-300 bg-black/70 px-2 py-1 rounded top-4 left-4 border border-cyan-500/30">
-              SPECTRUM: Transposed Conv Grid Anomaly (High Frequency Peaks)
+          <div className="absolute inset-0 bg-[#80B9A5]/15 mix-blend-color-dodge pointer-events-none flex items-center justify-center">
+            <div className="w-56 h-56 border border-[#80B9A5]/40 rounded-full animate-ping opacity-20"></div>
+            <div className="absolute top-4 left-4 font-mono text-[10px] text-[#80B9A5] bg-[#101311]/90 px-2 py-1 rounded border border-[#303A33]">
+              FFT SPECTRUM: Transposed Conv Periodic Spikes (High Freq Band)
             </div>
           </div>
         )}
 
-        {/* Spatial Gradient Mask Simulation */}
+        {/* Layer 3: Spatial Gradient Mask Simulation */}
         {activeLayer === 'gradient' && (
-          <div className="absolute inset-0 bg-red-950/20 mix-blend-difference pointer-events-none">
-            <div className="absolute font-mono text-[10px] text-amber-300 bg-black/70 px-2 py-1 rounded top-4 left-4 border border-amber-500/30">
-              GRADIENT: Edge Smoothing Discontinuity along Jawline
+          <div className="absolute inset-0 bg-[#E47777]/15 mix-blend-difference pointer-events-none">
+            <div className="absolute top-4 left-4 font-mono text-[10px] text-[#D9AB68] bg-[#101311]/90 px-2 py-1 rounded border border-[#303A33]">
+              GRADIENT: Boundary Laplacian Discontinuity along Jawline
             </div>
           </div>
         )}
 
-        {/* Sweeping Radar Scan Line */}
-        {isScanning && <div className="animate-scan-line pointer-events-none"></div>}
+        {/* Restrained Radar Scan Beam */}
+        {isScanning && <div className="animate-forensic-scan pointer-events-none"></div>}
 
-        {/* Synthetic Bounding Box: Face Region */}
-        <div className="absolute top-[18%] left-[32%] w-[36%] h-[56%] border-2 border-dashed border-cyan-400/80 rounded-xl pointer-events-none flex flex-col justify-between p-2 shadow-[0_0_15px_rgba(6,182,212,0.3)]">
+        {/* Synthetic Bounding Box: Face Region ROI */}
+        <div className="absolute top-[16%] left-[32%] w-[36%] h-[60%] border border-[#80B9A5] pointer-events-none flex flex-col justify-between p-2 shadow-sm bg-[#80B9A5]/5">
           <div className="flex justify-between items-start">
-            <span className="text-[9px] font-mono bg-cyan-950/90 text-cyan-300 px-1.5 py-0.5 rounded border border-cyan-500/40">
-              FACE ROI #01
+            <span className="text-[9px] font-mono bg-[#101311]/90 text-[#80B9A5] px-1.5 py-0.5 rounded border border-[#303A33]">
+              ROI #01 [X:328, Y:164]
             </span>
-            <span className="text-[9px] font-mono text-cyan-400 font-bold">
+            <span className="text-[9px] font-mono text-[#E47777] font-semibold bg-[#101311]/90 px-1 py-0.5 rounded border border-[#303A33]">
               p(manip) = 0.84
             </span>
           </div>
 
           {/* Eye Sub-Bounding Boxes */}
           <div className="flex justify-between px-3 -mt-6">
-            <div className="w-9 h-6 border border-violet-400 bg-violet-500/10 rounded flex items-center justify-center text-[7px] text-violet-300 font-mono">
-              EYE_L
+            <div className="w-9 h-6 border border-[#80B9A5]/70 bg-[#80B9A5]/10 rounded flex items-center justify-center text-[7px] text-[#80B9A5] font-mono">
+              CORNEA_L
             </div>
-            <div className="w-9 h-6 border border-violet-400 bg-violet-500/10 rounded flex items-center justify-center text-[7px] text-violet-300 font-mono">
-              EYE_R
+            <div className="w-9 h-6 border border-[#80B9A5]/70 bg-[#80B9A5]/10 rounded flex items-center justify-center text-[7px] text-[#80B9A5] font-mono">
+              CORNEA_R
             </div>
           </div>
 
-          <div className="flex justify-between items-end">
-            <span className="text-[8px] font-mono text-violet-300 bg-black/70 px-1 rounded">
-              Specular: Asymmetric
+          <div className="flex justify-between items-end text-[8px] font-mono">
+            <span className="text-[#A0AAA1] bg-[#101311]/90 px-1 py-0.5 rounded border border-[#303A33]">
+              Reflection: Asymmetric
             </span>
-            <span className="text-[8px] font-mono text-amber-300 bg-black/70 px-1 rounded">
+            <span className="text-[#D9AB68] bg-[#101311]/90 px-1 py-0.5 rounded border border-[#303A33]">
               Seam Blur: 0.78
             </span>
           </div>
         </div>
 
-        {/* Floating Forensic Indicators */}
-        <div className="absolute bottom-4 left-4 right-4 flex flex-wrap gap-2 pointer-events-none">
-          <div className="bg-slate-900/90 backdrop-blur-md border border-red-500/40 rounded-lg px-2.5 py-1 text-xs text-red-300 flex items-center gap-1.5 shadow-md">
-            <AlertTriangle className="w-3.5 h-3.5 text-red-400" />
-            <span className="font-mono font-medium">Spectral Checkerboard Detected</span>
+        {/* Telemetry Overlay Tags */}
+        <div className="absolute bottom-3 left-3 right-3 flex flex-wrap gap-2 pointer-events-none">
+          <div className="bg-[#101311]/90 border border-[#E47777]/40 rounded px-2 py-0.5 text-[10px] text-[#E47777] flex items-center gap-1.5 font-mono">
+            <AlertTriangle className="w-3 h-3" />
+            <span>High-Freq Periodic Artifacts</span>
           </div>
-          <div className="bg-slate-900/90 backdrop-blur-md border border-cyan-500/40 rounded-lg px-2.5 py-1 text-xs text-cyan-300 flex items-center gap-1.5 shadow-md">
-            <Eye className="w-3.5 h-3.5 text-cyan-400" />
-            <span className="font-mono font-medium">Gaze Coherence: 89%</span>
+          <div className="bg-[#101311]/90 border border-[#80B9A5]/40 rounded px-2 py-0.5 text-[10px] text-[#80B9A5] flex items-center gap-1.5 font-mono">
+            <Eye className="w-3 h-3" />
+            <span>Gaze Coherence: 89%</span>
           </div>
         </div>
 
       </div>
 
-      {/* Interactive Controls & Layer Switcher */}
-      <div className="p-4 bg-slate-900/70 border-t border-slate-800 flex flex-wrap items-center justify-between gap-3">
+      {/* Viewport Control Bar */}
+      <div className="p-3 bg-[#1D2420] border-t border-[#303A33] flex flex-wrap items-center justify-between gap-3">
         
-        {/* Layer Filters */}
+        {/* Layer Selectors */}
         <div className="flex items-center gap-1.5">
-          <span className="text-xs text-slate-400 mr-1 flex items-center gap-1">
-            <Layers className="w-3.5 h-3.5 text-slate-500" /> Layer:
+          <span className="text-xs text-[#707B72] mr-1 flex items-center gap-1 font-mono">
+            <Layers className="w-3.5 h-3.5 text-[#80B9A5]" />
+            <span>LAYER:</span>
           </span>
           <button
             onClick={() => setActiveLayer('standard')}
-            className={`px-2.5 py-1 rounded text-xs font-medium transition-colors ${
+            className={`px-2.5 py-1 rounded text-xs font-mono transition-colors cursor-pointer ${
               activeLayer === 'standard'
-                ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+                ? 'bg-[#242D27] text-[#80B9A5] border border-[#80B9A5]/50'
+                : 'text-[#A0AAA1] hover:text-[#F0F2ED] bg-[#171C19] border border-[#303A33]'
             }`}
           >
-            Original
+            Spatial RGB
           </button>
           <button
             onClick={() => setActiveLayer('frequency')}
-            className={`px-2.5 py-1 rounded text-xs font-medium transition-colors ${
+            className={`px-2.5 py-1 rounded text-xs font-mono transition-colors cursor-pointer ${
               activeLayer === 'frequency'
-                ? 'bg-violet-500/20 text-violet-300 border border-violet-500/40'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+                ? 'bg-[#242D27] text-[#80B9A5] border border-[#80B9A5]/50'
+                : 'text-[#A0AAA1] hover:text-[#F0F2ED] bg-[#171C19] border border-[#303A33]'
             }`}
           >
             2D-FFT Spectra
           </button>
           <button
             onClick={() => setActiveLayer('gradient')}
-            className={`px-2.5 py-1 rounded text-xs font-medium transition-colors ${
+            className={`px-2.5 py-1 rounded text-xs font-mono transition-colors cursor-pointer ${
               activeLayer === 'gradient'
-                ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+                ? 'bg-[#242D27] text-[#80B9A5] border border-[#80B9A5]/50'
+                : 'text-[#A0AAA1] hover:text-[#F0F2ED] bg-[#171C19] border border-[#303A33]'
             }`}
           >
             Boundary Gradient
           </button>
         </div>
 
-        {/* Action Button: Load into studio */}
+        {/* Scan Beam Control & Studio Action */}
         <div className="flex items-center gap-2">
           <button
             onClick={() => setIsScanning(!isScanning)}
-            className="text-xs text-slate-400 hover:text-white px-2 py-1 rounded hover:bg-slate-800 transition-colors"
+            className="text-xs font-mono text-[#A0AAA1] hover:text-[#F0F2ED] px-2.5 py-1 rounded bg-[#171C19] border border-[#303A33] hover:border-[#435248] transition-colors cursor-pointer"
           >
             {isScanning ? 'Pause Beam' : 'Resume Beam'}
           </button>
           <button
             onClick={() => onSelectSample('sample-ai-deepfake')}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-white bg-gradient-to-r from-cyan-600 to-violet-600 hover:from-cyan-500 hover:to-violet-500 shadow-md transition-all cursor-pointer"
+            className="flex items-center gap-1.5 px-3 py-1 rounded text-xs font-medium text-[#101311] bg-[#80B9A5] hover:bg-[#93c7b6] transition-colors cursor-pointer"
           >
             <Scan className="w-3.5 h-3.5" />
             <span>Load in Studio</span>

@@ -5,6 +5,8 @@ import logging
 import threading
 from typing import Dict, Any, Optional, Tuple, List
 from PIL import Image, ImageOps, ExifTags
+import torch
+from pathlib import Path
 
 logger = logging.getLogger("truthlens.classifier")
 
@@ -202,17 +204,91 @@ class SmaugBackend(BaseClassifierBackend):
         self.detector = None
         self.crops = int(os.environ.get("SMAUG_CROPS", "1"))
         self.label_mapping = {"FAKE": 1, "REAL": 0}
-
+    
     def initialize(self, hf_token: Optional[str] = None):
+        import torch
         from huggingface_hub import snapshot_download
+
+        # Load original Smaug architecture
         logger.info(f"Resolving snapshot for {self.model_id}...")
-        model_dir = snapshot_download(repo_id=self.model_id, token=hf_token)
+
+        model_dir = snapshot_download(
+            repo_id=self.model_id,
+            token=hf_token
+        )
+
         if model_dir not in sys.path:
             sys.path.insert(0, model_dir)
+
         from smaug_image_detect import SmaugImageDetect
-        logger.info(f"Loading Smaug detector from {model_dir} (crops={self.crops})...")
+
+        logger.info(
+            f"Loading Smaug detector from {model_dir} "
+            f"(crops={self.crops})..."
+        )
+
         self.detector = SmaugImageDetect.from_pretrained(model_dir)
+
+        # Locate fine-tuned checkpoint
+        checkpoint_path = (
+            Path(__file__).resolve().parents[2]
+            / "models"
+            / "smaug_partial_best.pt"
+        )
+
+        logger.info(f"Loading fine-tuned checkpoint: {checkpoint_path}")
+
+        if not checkpoint_path.is_file():
+            raise FileNotFoundError(
+                f"Checkpoint not found: {checkpoint_path}"
+            )
+
+        # Load fine-tuned weights
+        checkpoint = torch.load(
+            checkpoint_path,
+            map_location="cpu",
+            weights_only=False
+        )
+
+        trained_weights = checkpoint["trainable_state"]
+        model_parameters = dict(self.detector.st.named_parameters())
+
+        # Validate parameter names and shapes before applying weights
+        for name, weight in trained_weights.items():
+            if name not in model_parameters:
+                raise RuntimeError(
+                    f"Checkpoint parameter missing from model: {name}"
+                )
+
+            if model_parameters[name].shape != weight.shape:
+                raise RuntimeError(
+                    f"Parameter shape mismatch: {name}"
+                )
+
+        # Apply fine-tuned parameters
+        with torch.no_grad():
+            for name, weight in trained_weights.items():
+                parameter = model_parameters[name]
+
+                parameter.copy_(
+                    weight.to(
+                        device=parameter.device,
+                        dtype=parameter.dtype
+                    )
+                )
+
+        logger.info("FINE-TUNED TRUTHLENS MODEL IS ACTIVE")
+        logger.info(f"Checkpoint epoch: {checkpoint.get('epoch')}")
+        logger.info(f"Fine-tuned tensors loaded: {len(trained_weights)}")
+
+        self.detector.st.eval()
+
         self.label_mapping = {"FAKE": 1, "REAL": 0}
+
+        logger.info(
+            "SUCCESS: Fine-tuned Smaug checkpoint loaded!"
+        )
+    
 
     def predict_fake_probability(self, image: Image.Image) -> Tuple[float, int, Optional[Dict[str, float]]]:
         img = safe_to_rgb(ImageOps.exif_transpose(image) or image)
