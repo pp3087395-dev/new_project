@@ -56,3 +56,6 @@ backend/eval/fake/*
 !backend/eval/fake/.gitkeep
 backend/eval/cache_*.json
 backend/eval/crops_speed_experiment.json
+
+
+backend/models/*.pt
