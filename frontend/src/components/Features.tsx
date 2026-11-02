@@ -3,7 +3,8 @@ import {
   Image as ImageIcon, 
   Film, 
   HelpCircle, 
-  FileCheck2 
+  FileCheck2,
+  CheckCircle2
 } from 'lucide-react';
 
 interface FeaturesProps {
@@ -14,118 +15,111 @@ export const Features: FC<FeaturesProps> = () => {
   const featureList = [
     {
       id: 'image-authenticity',
-      title: 'Image Authenticity Analysis',
+      title: 'Spatial & Spectral Image Forensics',
       icon: ImageIcon,
-      accent: 'cyan',
       tag: 'Spatial & Spectral',
       description:
-        'Scans uploaded imagery for telltale signs of generative synthesis, boundary blending discontinuities, and 2D-FFT Fourier checkerboard artifacts produced by upsampling layers.',
+        'Scans uploaded imagery for telltale signs of generative synthesis, boundary blending discontinuities, and 2D-FFT Fourier checkerboard artifacts produced by convolutional upsampling layers.',
       capabilities: [
         'Transposed convolution grid detection',
         'Facial boundary gradient seam inspection',
-        'Corneal specular reflection symmetry check'
+        'Corneal specular reflection symmetry verification'
       ]
     },
     {
       id: 'video-frame-analysis',
-      title: 'Video Frame Analysis',
+      title: 'Video Frame & Keyframe Inspection',
       icon: Film,
-      accent: 'violet',
       tag: 'Temporal Consistency',
       description:
-        'Samples video keyframes to analyze intra-frame facial consistency and temporal transitions. Flags unnatural head pitch warping and frame-to-frame optical flow flickering.',
+        'Samples video keyframes to analyze intra-frame facial consistency and temporal transitions. Flags unnatural head pose warping and frame-to-frame optical flow flickering.',
       capabilities: [
         'Uniform keyframe sampling & inspection',
         'Suspicious timestamp localization',
-        'Warping & temporal jitter scoring'
+        'Optical warping & temporal jitter scoring'
       ]
     },
     {
       id: 'explainable-detection',
-      title: 'Explainable Detection Results',
+      title: 'Calibrated Explainable Verdicts',
       icon: HelpCircle,
-      accent: 'blue',
       tag: 'Interpretability First',
       description:
-        'Rejects opaque black-box verdicts. TruthLens unpacks individual forensic heuristics into distinct, human-readable evidence cards explaining why a metric was flagged.',
+        'Rejects opaque black-box verdicts. TruthLens unpacks individual forensic heuristics into distinct, human-readable evidence items explaining why a metric was flagged.',
       capabilities: [
-        'Heuristic severity ratings (High / Med / Low)',
+        'Heuristic severity ratings (Clean / Low / Med / High)',
         'Illustrative visual region callouts',
-        'Transparent limitations & context notice'
+        'Transparent model calibration & uncertainty band'
       ]
     },
     {
       id: 'downloadable-reports',
-      title: 'Downloadable Audit Reports',
+      title: 'Cryptographic Audit Reports',
       icon: FileCheck2,
-      accent: 'emerald',
-      tag: 'Executive Documentation',
+      tag: 'Documentation Suite',
       description:
-        'Generate structured, printable PDF audit documentation complete with simulated cryptographic verification hash, executive summary, evidence matrix, and ethical disclaimers.',
+        'Generate structured, printable PDF audit documentation complete with SHA-256 cryptographic verification hash, executive summary, evidence matrix, and ethical disclaimers.',
       capabilities: [
         'One-click PDF / browser print formatting',
-        'Cryptographic audit fingerprint',
-        'Clear demonstration vs live-model badge'
+        'Cryptographic SHA-256 audit fingerprint',
+        'Clear model provenance vs demo sample badge'
       ]
     }
   ];
 
   return (
-    <section className="py-20 bg-[#070A13] border-t border-slate-800/80">
+    <section className="py-20 bg-[#101311] border-t border-[#303A33]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Section Header */}
-        <div className="text-center max-w-3xl mx-auto mb-16">
-          <h2 className="text-xs font-mono uppercase tracking-widest text-cyan-400 mb-3 font-semibold">
-            Core Architecture
+        <div className="text-center max-w-3xl mx-auto mb-14">
+          <span className="text-[11px] font-mono uppercase tracking-widest text-[#80B9A5] mb-2 inline-block font-semibold">
+            FORENSIC CAPABILITIES
+          </span>
+          <h2 className="text-3xl sm:text-4xl font-bold text-[#F0F2ED] tracking-tight mb-4 font-sans">
+            Engineered for Forensic Transparency
           </h2>
-          <h3 className="text-3xl sm:text-4xl font-bold text-white tracking-tight font-heading mb-4">
-            Engineered for Transparency & Forensics
-          </h3>
-          <p className="text-slate-400 text-base leading-relaxed">
-            Modern media manipulation requires multi-dimensional inspection. TruthLens examines both spatial image anomalies and temporal video transitions.
+          <p className="text-[#A0AAA1] text-sm sm:text-base leading-relaxed">
+            Media authentication requires multidimensional inspection. TruthLens examines spatial generative artifacts, mathematical Fourier frequencies, and EXIF container provenance.
           </p>
         </div>
 
         {/* Feature Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {featureList.map((feature) => {
             const Icon = feature.icon;
             return (
               <div
                 key={feature.id}
-                className="glass-card glass-card-hover rounded-2xl p-7 flex flex-col justify-between border border-slate-800/80 bg-slate-900/40 relative overflow-hidden group"
+                className="rounded-lg p-6 flex flex-col justify-between border border-[#303A33] bg-[#171C19] hover:border-[#435248] transition-colors"
               >
-                {/* Glow accent */}
-                <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-500/5 rounded-full blur-2xl group-hover:bg-cyan-500/10 transition-colors pointer-events-none"></div>
-
                 <div>
                   <div className="flex items-center justify-between mb-4">
-                    <div className="w-12 h-12 rounded-xl bg-slate-800/80 border border-slate-700/80 flex items-center justify-center text-cyan-400 group-hover:scale-105 transition-transform duration-200">
-                      <Icon className="w-6 h-6" />
+                    <div className="w-10 h-10 rounded-md bg-[#1D2420] border border-[#303A33] flex items-center justify-center text-[#80B9A5]">
+                      <Icon className="w-5 h-5" />
                     </div>
-                    <span className="text-xs font-mono font-medium text-slate-400 bg-slate-800/50 px-2.5 py-1 rounded-full border border-slate-700/50">
+                    <span className="text-[10px] font-mono text-[#A0AAA1] bg-[#1D2420] px-2.5 py-1 rounded border border-[#303A33]">
                       {feature.tag}
                     </span>
                   </div>
 
-                  <h4 className="text-xl font-bold text-white mb-3 font-heading group-hover:text-cyan-300 transition-colors">
+                  <h3 className="text-lg font-bold text-[#F0F2ED] mb-2 font-sans">
                     {feature.title}
-                  </h4>
+                  </h3>
 
-                  <p className="text-slate-400 text-sm leading-relaxed mb-6">
+                  <p className="text-[#A0AAA1] text-xs sm:text-sm leading-relaxed mb-6">
                     {feature.description}
                   </p>
                 </div>
 
-                <div className="pt-4 border-t border-slate-800/80">
-                  <div className="text-xs font-semibold text-slate-300 mb-2.5 uppercase tracking-wider font-mono">
-                    Key Heuristics:
+                <div className="pt-4 border-t border-[#303A33]">
+                  <div className="text-[11px] font-mono text-[#707B72] uppercase tracking-wider mb-2 font-semibold">
+                    Core Metrics Evaluated:
                   </div>
                   <ul className="space-y-1.5">
                     {feature.capabilities.map((cap, idx) => (
-                      <li key={idx} className="flex items-center gap-2 text-xs text-slate-400">
-                        <span className="w-1.5 h-1.5 rounded-full bg-cyan-400"></span>
+                      <li key={idx} className="flex items-center gap-2 text-xs text-[#A0AAA1]">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-[#80B9A5] shrink-0" />
                         <span>{cap}</span>
                       </li>
                     ))}
