@@ -1,58 +1,78 @@
 @import "tailwindcss";
 
+@theme {
+  --color-forensic-bg: #101311;
+  --color-forensic-bg-alt: #171C19;
+  --color-forensic-surface: #1D2420;
+  --color-forensic-elevated: #242D27;
+  --color-forensic-border: #303A33;
+  --color-forensic-border-bright: #435248;
+  --color-forensic-accent: #80B9A5;
+  --color-forensic-real: #70B68A;
+  --color-forensic-fake: #E47777;
+  --color-forensic-warning: #D9AB68;
+  --color-forensic-text: #F0F2ED;
+  --color-forensic-secondary: #A0AAA1;
+  --color-forensic-muted: #707B72;
+
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
 @layer base {
   :root {
     --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    --font-heading: 'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-    --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+    --font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
   }
 
   body {
     font-family: var(--font-sans);
-    background-color: #070A13;
-    color: #F1F5F9;
+    background-color: #f8fafc;
+    color: #0f172a;
     overflow-x: hidden;
+    background-image: 
+      linear-gradient(to right, rgba(203, 213, 225, 0.4) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(203, 213, 225, 0.4) 1px, transparent 1px);
+    background-size: 32px 32px;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    font-family: var(--font-heading);
-    letter-spacing: -0.02em;
+    letter-spacing: -0.015em;
   }
 }
 
-/* Custom background patterns */
-.cyber-grid {
+/* Overall technical forensic grid pattern with crisp slate definition */
+.forensic-grid,
+.forensic-grid-light {
   background-image: 
-    linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-  background-size: 36px 36px;
+    linear-gradient(to right, rgba(203, 213, 225, 0.4) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(203, 213, 225, 0.4) 1px, transparent 1px);
+  background-size: 32px 32px;
 }
 
-.radial-glow {
-  background: radial-gradient(circle at 50% 0%, rgba(99, 102, 241, 0.15) 0%, rgba(6, 182, 212, 0.08) 35%, transparent 70%);
+.forensic-dot-grid {
+  background-image: radial-gradient(rgba(37, 99, 235, 0.18) 1px, transparent 1px);
+  background-size: 24px 24px;
 }
 
-.glass-card {
-  background: rgba(15, 23, 42, 0.7);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+/* Elevated high-contrast cards */
+.forensic-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05);
 }
 
-.glass-card-hover {
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-}
-.glass-card-hover:hover {
-  border-color: rgba(6, 182, 212, 0.3);
-  transform: translateY(-2px);
-  box-shadow: 0 12px 30px -10px rgba(6, 182, 212, 0.15);
+.forensic-card-elevated {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.04);
 }
 
-/* Radar scan beam animation */
-@keyframes radar-scan {
+/* Restrained radar scan beam */
+@keyframes forensic-scan {
   0% {
     top: 0%;
-    opacity: 0.8;
+    opacity: 0.9;
   }
   50% {
     opacity: 1;
@@ -63,57 +83,193 @@
   }
 }
 
-.animate-scan-line {
+.animate-forensic-scan {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1.5px;
+  background: linear-gradient(90deg, transparent, #80B9A5, #70B68A, transparent);
+  box-shadow: 0 0 10px 1px rgba(128, 185, 165, 0.4);
+  animation: forensic-scan 2.6s ease-in-out infinite alternate;
+}
+
+/* Corner reticles for forensic media frame */
+.reticle-corner-tl {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  width: 12px;
+  height: 12px;
+  border-top: 1.5px solid #80B9A5;
+  border-left: 1.5px solid #80B9A5;
+  pointer-events: none;
+}
+.reticle-corner-tr {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 12px;
+  height: 12px;
+  border-top: 1.5px solid #80B9A5;
+  border-right: 1.5px solid #80B9A5;
+  pointer-events: none;
+}
+.reticle-corner-bl {
+  position: absolute;
+  bottom: 8px;
+  left: 8px;
+  width: 12px;
+  height: 12px;
+  border-bottom: 1.5px solid #80B9A5;
+  border-left: 1.5px solid #80B9A5;
+  pointer-events: none;
+}
+.reticle-corner-br {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  width: 12px;
+  height: 12px;
+  border-bottom: 1.5px solid #80B9A5;
+  border-right: 1.5px solid #80B9A5;
+  pointer-events: none;
+}
+
+/* Shaking animation for hero forensic inspection container */
+@keyframes forensic-shake {
+  0%, 100% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+  5% {
+    transform: translate(-3px, -2px) rotate(-0.8deg);
+  }
+  10% {
+    transform: translate(3px, 2px) rotate(0.8deg);
+  }
+  15% {
+    transform: translate(-4px, 1px) rotate(-0.6deg);
+  }
+  20% {
+    transform: translate(4px, -1px) rotate(0.6deg);
+  }
+  25% {
+    transform: translate(-2px, 2px) rotate(-0.4deg);
+  }
+  30% {
+    transform: translate(2px, -2px) rotate(0.4deg);
+  }
+  35% {
+    transform: translate(-1px, 1px) rotate(-0.2deg);
+  }
+  40% {
+    transform: translate(1px, -1px) rotate(0.2deg);
+  }
+  45%, 90% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+  92% {
+    transform: translate(-2px, 1px) rotate(-0.4deg);
+  }
+  95% {
+    transform: translate(2px, -1px) rotate(0.4deg);
+  }
+  98% {
+    transform: translate(-1px, 0) rotate(0deg);
+  }
+}
+
+.animate-shake {
+  animation: forensic-shake 2.8s ease-in-out infinite;
+  transform-origin: center center;
+  will-change: transform;
+}
+
+/* Blue scan beam for elevated hero preview */
+.animate-forensic-scan-blue {
   position: absolute;
   left: 0;
   right: 0;
   height: 2px;
-  background: linear-gradient(90deg, transparent, #06B6D4, #8B5CF6, transparent);
-  box-shadow: 0 0 15px 2px rgba(6, 182, 212, 0.6);
-  animation: radar-scan 2.8s ease-in-out infinite alternate;
+  background: linear-gradient(90deg, transparent, #2563eb, #60a5fa, transparent);
+  box-shadow: 0 0 12px 2px rgba(37, 99, 235, 0.5);
+  animation: forensic-scan 2.6s ease-in-out infinite alternate;
 }
 
-/* Pulse beacon */
-@keyframes pulse-ring {
-  0% {
-    transform: scale(0.95);
-    opacity: 0.8;
-  }
-  50% {
-    transform: scale(1.15);
-    opacity: 0.3;
-  }
-  100% {
-    transform: scale(0.95);
-    opacity: 0.8;
-  }
+/* Cyan scan beam for heuristic forensic viewer */
+.animate-forensic-scan-cyan {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #22d3ee, #38bdf8, transparent);
+  box-shadow: 0 0 14px 2px rgba(34, 211, 238, 0.6);
+  animation: forensic-scan 2.6s ease-in-out infinite alternate;
 }
 
-.pulse-beacon {
-  animation: pulse-ring 2.5s infinite ease-in-out;
+/* Blue corner reticles for hero media frame */
+.reticle-corner-blue-tl {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  width: 14px;
+  height: 14px;
+  border-top: 2px solid #2563eb;
+  border-left: 2px solid #2563eb;
+  pointer-events: none;
+}
+.reticle-corner-blue-tr {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 14px;
+  height: 14px;
+  border-top: 2px solid #2563eb;
+  border-right: 2px solid #2563eb;
+  pointer-events: none;
+}
+.reticle-corner-blue-bl {
+  position: absolute;
+  bottom: 8px;
+  left: 8px;
+  width: 14px;
+  height: 14px;
+  border-bottom: 2px solid #2563eb;
+  border-left: 2px solid #2563eb;
+  pointer-events: none;
+}
+.reticle-corner-blue-br {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  width: 14px;
+  height: 14px;
+  border-bottom: 2px solid #2563eb;
+  border-right: 2px solid #2563eb;
+  pointer-events: none;
 }
 
-/* Custom scrollbars */
+/* Custom technical scrollbars */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #0B0F19;
+  background: #101311;
 }
 ::-webkit-scrollbar-thumb {
-  background: #1E293B;
-  border-radius: 4px;
+  background: #242D27;
+  border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #334155;
+  background: #303A33;
 }
 
-/* Print styles for audit report generation */
+/* Formal Print styles for forensic audit reports */
 @media print {
   body {
     background: #ffffff !important;
-    color: #0f172a !important;
+    color: #111827 !important;
+    font-size: 11pt;
   }
   .no-print {
     display: none !important;
@@ -121,10 +277,11 @@
   .print-only {
     display: block !important;
   }
-  .glass-card {
+  .forensic-card, .forensic-card-elevated {
     background: #ffffff !important;
-    border: 1px solid #cbd5e1 !important;
+    border: 1px solid #d1d5db !important;
     box-shadow: none !important;
+    color: #111827 !important;
   }
   .report-page-container {
     padding: 0 !important;

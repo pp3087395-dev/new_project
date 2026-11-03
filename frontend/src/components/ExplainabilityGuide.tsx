@@ -7,8 +7,8 @@ import {
   Activity, 
   HelpCircle, 
   AlertTriangle, 
-  Sparkles, 
-  Cpu
+  Cpu,
+  ShieldAlert
 } from 'lucide-react';
 
 export const ExplainabilityGuide: FC = () => {
@@ -19,43 +19,43 @@ export const ExplainabilityGuide: FC = () => {
       id: 'frequency-domain',
       title: '2D-FFT Fourier & Frequency Domain Anomalies',
       icon: Activity,
-      summary: 'Why AI upsamplers leave invisible frequency grid fingerprints.',
-      content: `Generative models (GANs, diffusion architectures like Stable Diffusion, Midjourney, and StyleGAN) construct images by successively upsampling latent feature vectors. In early layers, operations like transposed convolutions (deconvolutions) introduce regular mathematical periodicities across pixel grids.\n\nWhile invisible to human eyes in the spatial domain, converting the image to the 2D Fourier (FFT) domain transforms these repeating spatial patterns into prominent high-frequency cross-hatch spikes or circular concentric ripples.\n\nNatural camera optics and lenses do not produce periodic frequency grids; their energy decays smoothly following a natural 1/f power spectrum.`
+      summary: 'Why generative upsamplers leave mathematical frequency checkerboard signatures.',
+      content: `Generative models (GANs, diffusion architectures including Stable Diffusion, Midjourney, StyleGAN, and Flux) construct images by successively upsampling latent feature matrices. In intermediate stages, transposed convolution (deconvolution) operations introduce regular mathematical periodicities across pixel grids.\n\nWhile invisible to the naked eye in standard RGB space, computing the 2D Fast Fourier Transform (FFT) decomposes the spatial matrix into its spatial frequency components. The repetitive spatial upsampling patterns manifest as prominent high-frequency cross-hatch spikes, starburst spokes, or concentric ripples.\n\nNatural camera optics and optical glass lenses do not generate periodic frequency lattices; real sensor noise smoothly decays following a natural 1/f power spectrum.`
     },
     {
       id: 'facial-seams',
       title: 'Boundary Blending & Warping Gradients',
       icon: Layers,
-      summary: 'Detecting edge discontinuities in face-swap operations.',
-      content: `Face-swap tools (DeepFaceLab, SimSwap, RoOP) extract a target face, synthesize a replacement facial pose, and composite it back onto the original frame. To hide edges, tools apply Gaussian feathering or Poisson image blending.\n\nHowever, blending creates a localized drop in spatial sharpness right at the boundary (along the jawline, forehead hairline, and neck). Our inspection looks for a mismatch between the micro-grain noise of the face versus the background camera sensor.`
+      summary: 'Detecting spatial edge discontinuities in face-swap composites.',
+      content: `Face-swap tools (DeepFaceLab, SimSwap, Roop) extract a source face, synthesize an aligned facial pose, and composite it onto the original frame. To mask hard edges, algorithms apply Gaussian feathering or Poisson gradient blending.\n\nHowever, blending creates a localized drop in spatial sharpness right at the composite seam (along the jawline, forehead hairline, and neck). Our forensic inspection evaluates discrepancies between the micro-grain sensor noise of the face versus the background camera sensor.`
     },
     {
       id: 'ocular-symmetry',
       title: 'Corneal Specular Reflection Physics',
       icon: Eye,
-      summary: 'Testing bilateral lighting angles in eyes.',
-      content: `Human eyes are reflective spheres. In real photographs taken under ambient lighting (e.g. sun, studio lamp, window), the specular highlight on the left cornea and right cornea must align in angle, shape, and intensity with 3D scene physics.\n\nGenerative AI synthesizes each facial region statistically rather than solving ray-tracing lighting equations. Consequently, synthetic portraits frequently render inconsistent pupil shapes or highlight reflections pointing toward contradictory light sources.`
+      summary: 'Evaluating bilateral illumination geometry across reflective eyes.',
+      content: `Human eyes are reflective spherical surfaces. In real photography captured under ambient light (e.g., sun, studio flash, window), the specular highlight on the left cornea and right cornea must obey 3D optical physics regarding angle, shape, and intensity.\n\nGenerative AI models synthesize each facial sub-region statistically rather than solving 3D ray-tracing physics. Consequently, synthetic portraits frequently render inconsistent pupil outlines, distorted specular reflections, or highlights pointing toward contradictory virtual light sources.`
     },
     {
       id: 'video-temporal',
       title: 'Video Keyframe & Temporal Flow Jitter',
       icon: Cpu,
-      summary: 'Why deepfake video flickers across rapid head movements.',
-      content: `Generating a deepfake video requires frame-by-frame synthesis. Even with optical flow regularization, micro-misalignments occur during rapid head rotations, blinks, or occlusion (such as a hand passing in front of the face).\n\nThis introduces high-frequency temporal flickering—a rapid change in pixel values from frame N to N+1 that exceeds normal biological movement speeds.`
+      summary: 'Why deepfake video flickers across rapid head rotations.',
+      content: `Generating a deepfake video requires frame-by-frame synthesis. Even with optical flow regularization, micro-misalignments occur during rapid head turns, eye blinks, or occlusion (such as a hand passing in front of the face).\n\nThis introduces high-frequency temporal flickering—a rapid variation in pixel values from frame N to N+1 that exceeds natural biological movement dynamics.`
     },
     {
       id: 'uncertainty-limits',
-      title: 'Why Results May Be Uncertain',
+      title: 'Why Results May Be Inconclusive',
       icon: AlertTriangle,
-      summary: 'Understanding compression, low resolution, and lighting noise.',
-      content: `Automated detection struggles when:\n1. Social Media Compression: Platforms like WhatsApp and Instagram re-encode images with heavy JPEG compression, wiping out fine Fourier signatures.\n2. Low Resolution: Media smaller than 512x512 lacks sufficient pixel density for boundary gradient analysis.\n3. Motion Blur: Natural rapid movement blurs edges, mimicking generative smoothing.\n4. Camera Lens Distortions: Wide-angle lenses produce optical warping that can resemble geometric manipulation.`
+      summary: 'Understanding compression degradation, low resolution, and lens blur.',
+      content: `Automated detection encounters genuine uncertainty when:\n1. Social Media Compression: Platforms like WhatsApp and Instagram re-encode images with aggressive JPEG quantization, wiping out fine Fourier signatures.\n2. Low Resolution: Media smaller than 512×512 lacks sufficient pixel density for reliable boundary gradient analysis.\n3. Motion Blur: Natural rapid movement blurs edges, mimicking generative smoothing.\n4. Optical Lens Distortions: Wide-angle lenses produce barrel warping that can mimic geometric manipulation.`
     },
     {
       id: 'what-ai-cannot-do',
       title: 'What Automated Detectors CANNOT Determine',
       icon: HelpCircle,
-      summary: 'Distinguishing intent, context, and non-AI modifications.',
-      content: `TruthLens is designed to detect statistical pixel and frequency anomalies. It cannot determine:\n• Intent: Whether media was created for satire, art, or malicious disinformation.\n• Traditional Editing: Color grading, cropping, or standard Photoshop touchups are not generative deepfakes.\n• Contextual Deception: A real, unedited video labeled with a false date or misleading caption (cheapfake/shallowfake) will appear authentic at the pixel level.\n\nHuman journalism and provenance verification remain indispensable.`
+      summary: 'Distinguishing intent, journalistic context, and traditional editing.',
+      content: `TruthLens evaluates statistical pixel and frequency anomalies. It cannot determine:\n• Intent: Whether media was created for satire, digital art, or malicious disinformation.\n• Traditional Photo Retouching: Color grading, cropping, or standard Photoshop touchups are not generative deepfakes.\n• Contextual Deception: A real, unedited video distributed with a false date or fabricated caption (cheapfake/shallowfake) appears completely authentic at the pixel level.\n\nIndependent human corroboration, provenance checking, and investigative verification remain indispensable.`
     }
   ];
 
@@ -63,27 +63,27 @@ export const ExplainabilityGuide: FC = () => {
   const CurrentIcon = currentTopic.icon;
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-12">
+    <div className="max-w-5xl mx-auto px-4 py-8">
       
       {/* Title */}
-      <div className="text-center max-w-3xl mx-auto mb-12">
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono font-medium bg-cyan-950/60 text-cyan-300 border border-cyan-800/40 mb-3">
+      <div className="text-center max-w-3xl mx-auto mb-10">
+        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-mono bg-[#1D2420] text-[#80B9A5] border border-[#303A33] mb-2.5">
           <BookOpen className="w-3.5 h-3.5" />
-          <span>Forensic Education Hub</span>
+          <span>FORENSIC EDUCATION HUB</span>
         </div>
-        <h1 className="text-3xl sm:text-4xl font-bold text-white tracking-tight font-heading mb-3">
-          Understand the Evidence
+        <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-[#F0F2ED] tracking-tight mb-2.5 font-sans">
+          Understand the Forensic Evidence
         </h1>
-        <p className="text-slate-400 text-sm sm:text-base leading-relaxed">
-          Learn how forensic algorithms dissect synthetic imagery, what visual signals reveal manipulation, and where automated detectors face fundamental limits.
+        <p className="text-xs sm:text-sm text-[#A0AAA1] leading-relaxed max-w-2xl mx-auto">
+          Learn how forensic algorithms decompose synthetic imagery, what visual and frequency signals reveal manipulation, and where automated detectors face fundamental boundaries.
         </p>
       </div>
 
-      {/* Two-Column Explorer */}
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
+      {/* Two-Column Topic Explorer */}
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
         
-        {/* Navigation Sidebar (4 cols) */}
-        <div className="md:col-span-5 space-y-2">
+        {/* Navigation Sidebar */}
+        <div className="md:col-span-5 space-y-2 font-mono text-xs">
           {topics.map((topic) => {
             const Icon = topic.icon;
             const isSelected = selectedTopic === topic.id;
@@ -91,22 +91,22 @@ export const ExplainabilityGuide: FC = () => {
               <button
                 key={topic.id}
                 onClick={() => setSelectedTopic(topic.id)}
-                className={`w-full text-left p-4 rounded-xl border transition-all flex items-start gap-3 cursor-pointer ${
+                className={`w-full text-left p-3.5 rounded border transition-colors flex items-start gap-3 cursor-pointer ${
                   isSelected
-                    ? 'bg-cyan-950/40 border-cyan-500/50 shadow-md text-white'
-                    : 'bg-slate-900/40 border-slate-800 text-slate-300 hover:bg-slate-800/50 hover:text-white'
+                    ? 'bg-[#1D2420] border-[#80B9A5]/60 text-[#F0F2ED]'
+                    : 'bg-[#171C19] border-[#303A33] text-[#A0AAA1] hover:bg-[#1D2420] hover:text-[#F0F2ED]'
                 }`}
               >
-                <div className={`p-2 rounded-lg shrink-0 mt-0.5 ${
-                  isSelected ? 'bg-cyan-500/20 text-cyan-300' : 'bg-slate-800 text-slate-400'
+                <div className={`p-1.5 rounded shrink-0 mt-0.5 ${
+                  isSelected ? 'bg-[#101311] text-[#80B9A5]' : 'bg-[#101311] text-[#707B72]'
                 }`}>
                   <Icon className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="text-xs font-bold leading-tight mb-1">
+                  <h3 className="text-xs font-bold leading-tight mb-0.5">
                     {topic.title}
                   </h3>
-                  <p className="text-[11px] text-slate-400 line-clamp-1">
+                  <p className="text-[11px] text-[#707B72] line-clamp-1 font-sans">
                     {topic.summary}
                   </p>
                 </div>
@@ -115,37 +115,45 @@ export const ExplainabilityGuide: FC = () => {
           })}
         </div>
 
-        {/* Content Viewer (7 cols) */}
+        {/* Content Viewer */}
         <div className="md:col-span-7">
-          <div className="glass-card rounded-2xl border border-slate-800 bg-slate-900/60 p-6 sm:p-8 shadow-xl relative min-h-[420px] flex flex-col justify-between">
+          <div className="rounded-lg border border-[#303A33] bg-[#171C19] p-6 shadow-xl relative min-h-[440px] flex flex-col justify-between">
+            {/* Reticles */}
+            <div className="reticle-corner-tl" />
+            <div className="reticle-corner-tr" />
+            <div className="reticle-corner-bl" />
+            <div className="reticle-corner-br" />
+
             <div>
-              <div className="flex items-center gap-3 pb-4 border-b border-slate-800 mb-6">
-                <div className="w-12 h-12 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
-                  <CurrentIcon className="w-6 h-6" />
+              {/* Active Topic Header */}
+              <div className="flex items-center gap-3 pb-4 border-b border-[#303A33] mb-5">
+                <div className="w-10 h-10 rounded-md bg-[#1D2420] border border-[#303A33] flex items-center justify-center text-[#80B9A5]">
+                  <CurrentIcon className="w-5 h-5" />
                 </div>
                 <div>
-                  <span className="text-[10px] font-mono uppercase tracking-wider text-cyan-400 font-semibold">
-                    Technical Deep Dive
+                  <span className="text-[10px] font-mono uppercase tracking-widest text-[#80B9A5] block">
+                    FORENSIC TOPIC BRIEF
                   </span>
-                  <h2 className="text-lg font-bold text-white font-heading">
+                  <h2 className="text-lg font-bold text-[#F0F2ED] font-sans">
                     {currentTopic.title}
                   </h2>
                 </div>
               </div>
 
-              <div className="prose prose-invert max-w-none text-slate-300 text-xs sm:text-sm leading-relaxed space-y-4 whitespace-pre-line">
-                {currentTopic.content}
+              {/* Topic Content */}
+              <div className="space-y-4 text-xs sm:text-sm text-[#A0AAA1] leading-relaxed">
+                {currentTopic.content.split('\n\n').map((paragraph, pIdx) => (
+                  <p key={pIdx}>{paragraph}</p>
+                ))}
               </div>
             </div>
 
-            <div className="mt-8 pt-4 border-t border-slate-800 text-xs text-slate-400 flex items-center justify-between">
-              <span className="flex items-center gap-1.5 font-mono text-[11px] text-violet-400">
-                <Sparkles className="w-3.5 h-3.5" /> Educational Forensic Framework
-              </span>
-              <span className="text-slate-500 text-[11px]">
-                TruthLens Heuristics v0.9
-              </span>
+            {/* Bottom Caution Banner */}
+            <div className="mt-6 pt-4 border-t border-[#303A33] flex items-center gap-2 text-[11px] font-mono text-[#D9AB68]">
+              <ShieldAlert className="w-4 h-4 shrink-0" />
+              <span>Ground Truth: Automated scores should always be verified alongside provenance context.</span>
             </div>
+
           </div>
         </div>
 

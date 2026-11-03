@@ -8,11 +8,14 @@ import {
   ArrowLeft, 
   ShieldAlert, 
   Activity, 
-  Sparkles, 
   Download,
   Info,
   Cpu,
-  ShieldCheck
+  ShieldCheck,
+  Copy,
+  Check,
+  FileText,
+  RotateCcw
 } from 'lucide-react';
 import type { AnalysisResult, EvidenceItem } from '../types';
 
@@ -31,7 +34,24 @@ export const ResultsDashboard: FC<ResultsDashboardProps> = ({
   const [selectedEvidence, setSelectedEvidence] = useState<EvidenceItem | null>(
     result.evidence.length > 0 ? result.evidence[0] : null
   );
+  const [copied, setCopied] = useState(false);
 
+  const handleCopySummary = () => {
+    const summaryText = [
+      `TRUTHLENS FORENSIC EXAMINATION REPORT`,
+      `Audit Reference: ${result.id}`,
+      `File: ${result.fileName} (${result.fileSizeFormatted})`,
+      `Verdict: ${status.label}`,
+      result.aiClassification?.confidenceScore != null ? `Model Confidence: ${result.aiClassification.confidenceScore.toFixed(1)}%` : '',
+      `SHA-256 Hash: ${result.sha256Hash}`,
+      `Analyzed At: ${result.analyzedAt}`
+    ].filter(Boolean).join('\n');
+
+    navigator.clipboard.writeText(summaryText).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
 
   const getStatusBadge = () => {
     const activeModelName = result.aiClassification?.modelName?.toUpperCase() || 'AI FORENSIC CLASSIFIER';
@@ -40,13 +60,14 @@ export const ResultsDashboard: FC<ResultsDashboardProps> = ({
       const pred = result.aiClassification.predictedClass;
       if (pred === 'FAKE') {
         return {
-          label: 'LIKELY FULLY AI-GENERATED',
+          label: 'FAKE // AI-GENERATED MEDIA',
+          shortLabel: 'FAKE',
           badgeText: activeModelName,
           icon: AlertTriangle,
-          textColor: 'text-red-300',
-          bgColor: 'bg-red-950/70',
-          borderColor: 'border-red-500/50',
-          glowColor: 'shadow-red-500/20'
+          textColor: 'text-rose-700',
+          bgColor: 'bg-rose-50/90',
+          borderColor: 'border-rose-300',
+          indicatorColor: 'bg-rose-600'
         };
       }
       if (pred === 'INCONCLUSIVE') {
@@ -54,85 +75,89 @@ export const ResultsDashboard: FC<ResultsDashboardProps> = ({
           ? (result.aiClassification.scores.FAKE * 100).toFixed(1)
           : (result.confidenceScore != null ? result.confidenceScore.toFixed(1) : '50.0');
         return {
-          label: 'INCONCLUSIVE',
-          badgeText: `INCONCLUSIVE (AI probability: ${fakeProb}%)`,
+          label: 'INCONCLUSIVE // UNCERTAIN STATE',
+          shortLabel: 'INCONCLUSIVE',
+          badgeText: `INCONCLUSIVE (AI prob: ${fakeProb}%)`,
           icon: HelpCircle,
-          textColor: 'text-amber-300',
-          bgColor: 'bg-amber-950/70',
-          borderColor: 'border-amber-500/50',
-          glowColor: 'shadow-amber-500/20'
+          textColor: 'text-amber-800',
+          bgColor: 'bg-amber-50/90',
+          borderColor: 'border-amber-300',
+          indicatorColor: 'bg-amber-500'
         };
       }
       return {
-        label: 'NO SIGNS OF FULL AI GENERATION',
+        label: 'REAL // NO SIGNS OF FULL AI GENERATION',
+        shortLabel: 'REAL',
         badgeText: activeModelName,
         icon: CheckCircle2,
-        textColor: 'text-emerald-300',
-        bgColor: 'bg-emerald-950/70',
-        borderColor: 'border-emerald-500/50',
-        glowColor: 'shadow-emerald-500/20'
+        textColor: 'text-emerald-700',
+        bgColor: 'bg-emerald-50/90',
+        borderColor: 'border-emerald-300',
+        indicatorColor: 'bg-emerald-600'
       };
     }
 
     if (result.aiClassification && result.aiClassification.status !== 'success') {
       return {
-        label: 'AI MODEL UNAVAILABLE — SIGNAL FORENSICS ONLY',
-        badgeText: 'GENUINE SIGNAL PROCESSING',
+        label: 'AI CLASSIFIER OFFLINE — SIGNAL FORENSICS ONLY',
+        shortLabel: 'SIGNAL ONLY',
+        badgeText: 'GENUINE SIGNAL FORENSICS',
         icon: HelpCircle,
-        textColor: 'text-amber-300',
-        bgColor: 'bg-amber-950/70',
-        borderColor: 'border-amber-500/50',
-        glowColor: 'shadow-amber-500/20'
+        textColor: 'text-amber-800',
+        bgColor: 'bg-amber-50/90',
+        borderColor: 'border-amber-300',
+        indicatorColor: 'bg-amber-500'
       };
     }
 
     if (result.resultCategory === 'potentially_manipulated') {
       return {
-        label: 'LIKELY FULLY AI-GENERATED',
+        label: 'FAKE // LIKELY FULLY AI-GENERATED',
+        shortLabel: 'FAKE',
         badgeText: activeModelName,
         icon: AlertTriangle,
-        textColor: 'text-red-300',
-        bgColor: 'bg-red-950/70',
-        borderColor: 'border-red-500/50',
-        glowColor: 'shadow-red-500/20'
+        textColor: 'text-rose-700',
+        bgColor: 'bg-rose-50/90',
+        borderColor: 'border-rose-300',
+        indicatorColor: 'bg-rose-600'
       };
     }
 
     if (result.resultCategory === 'no_strong_signs') {
       return {
-        label: 'NO SIGNS OF FULL AI GENERATION',
+        label: 'REAL // NO SIGNS OF FULL AI GENERATION',
+        shortLabel: 'REAL',
         badgeText: activeModelName,
         icon: CheckCircle2,
-        textColor: 'text-emerald-300',
-        bgColor: 'bg-emerald-950/70',
-        borderColor: 'border-emerald-500/50',
-        glowColor: 'shadow-emerald-500/20'
+        textColor: 'text-emerald-700',
+        bgColor: 'bg-emerald-50/90',
+        borderColor: 'border-emerald-300',
+        indicatorColor: 'bg-emerald-600'
       };
     }
 
     if (result.resultCategory === 'inconclusive') {
-      const fakeProb = result.aiClassification?.scores?.FAKE !== undefined
-        ? (result.aiClassification.scores.FAKE * 100).toFixed(1)
-        : (result.confidenceScore != null ? result.confidenceScore.toFixed(1) : '50.0');
       return {
-        label: 'INCONCLUSIVE',
-        badgeText: `INCONCLUSIVE (AI probability: ${fakeProb}%)`,
+        label: 'INCONCLUSIVE // UNCERTAIN STATE',
+        shortLabel: 'INCONCLUSIVE',
+        badgeText: 'INCONCLUSIVE ANALYSIS',
         icon: HelpCircle,
-        textColor: 'text-amber-300',
-        bgColor: 'bg-amber-950/70',
-        borderColor: 'border-amber-500/50',
-        glowColor: 'shadow-amber-500/20'
+        textColor: 'text-amber-800',
+        bgColor: 'bg-amber-50/90',
+        borderColor: 'border-amber-300',
+        indicatorColor: 'bg-amber-500'
       };
     }
 
     return {
-      label: 'IMAGE FORENSICS — SIGNAL PROCESSING ACTIVE',
-      badgeText: 'GENUINE SIGNAL PROCESSING',
+      label: 'IMAGE FORENSICS // SIGNAL PROCESSING ACTIVE',
+      shortLabel: 'SIGNAL FORENSICS',
+      badgeText: 'DETERMINISTIC 2D-FFT',
       icon: Activity,
-      textColor: 'text-cyan-300',
-      bgColor: 'bg-cyan-950/40',
-      borderColor: 'border-cyan-500/50',
-      glowColor: 'shadow-cyan-500/10'
+      textColor: 'text-blue-700',
+      bgColor: 'bg-blue-50/90',
+      borderColor: 'border-blue-300',
+      indicatorColor: 'bg-blue-600'
     };
   };
 
@@ -140,184 +165,220 @@ export const ResultsDashboard: FC<ResultsDashboardProps> = ({
   const StatusIcon = status.icon;
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8 space-y-8">
+    <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">
       
-      {/* Top Breadcrumb & Actions Bar */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-6 border-b border-slate-800">
+      {/* Top Breadcrumb & Action Toolbar */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-slate-200">
         <button
           onClick={onNewAnalysis}
-          className="flex items-center gap-2 text-xs font-medium text-slate-400 hover:text-cyan-400 transition-colors cursor-pointer"
+          className="flex items-center gap-2 text-xs font-mono font-bold text-slate-800 hover:text-blue-600 transition-colors cursor-pointer"
         >
-          <ArrowLeft className="w-4 h-4" />
-          <span>Back to Upload Studio</span>
+          <ArrowLeft className="w-3.5 h-3.5" />
+          <span>BACK TO UPLOAD CONSOLE</span>
         </button>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2.5">
+          {/* Copy Summary Action */}
           <button
-            onClick={onOpenReport}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold text-white bg-slate-800 hover:bg-slate-700 border border-slate-700/80 hover:border-cyan-500/40 transition-all cursor-pointer shadow-sm"
+            onClick={handleCopySummary}
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-mono font-bold text-slate-800 bg-white hover:text-blue-600 border border-slate-300 hover:border-blue-400 transition-colors cursor-pointer shadow-2xs"
+            title="Copy audit findings to clipboard"
           >
-            <Download className="w-4 h-4 text-cyan-400" />
-            <span>Generate Audit Report (PDF/Print)</span>
+            {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+            <span>{copied ? 'COPIED' : 'COPY SUMMARY'}</span>
           </button>
 
+          {/* Download PDF Audit Report */}
+          <button
+            onClick={onOpenReport}
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-mono font-bold text-slate-900 bg-white hover:bg-slate-50 border border-slate-300 hover:border-blue-500 transition-colors cursor-pointer shadow-2xs"
+          >
+            <Download className="w-3.5 h-3.5 text-blue-600" />
+            <span>DOWNLOAD AUDIT REPORT</span>
+          </button>
+
+          {/* Analyze Another File */}
           <button
             onClick={onNewAnalysis}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold text-white bg-gradient-to-r from-cyan-500 to-violet-600 hover:from-cyan-400 hover:to-violet-500 transition-all cursor-pointer shadow-md shadow-cyan-500/10"
+            className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 active:scale-95 transition-all shadow-sm cursor-pointer"
           >
+            <RotateCcw className="w-3.5 h-3.5 text-white" />
             <span>Analyze Another File</span>
           </button>
         </div>
       </div>
 
-      {/* AI Provenance Clue Alert Banner */}
+      {/* AI Provenance Clue Alert Banner (if EXIF/IPTC declares AI tool) */}
       {result.provenance?.aiSourceDeclared && (
-        <div className="p-4 rounded-xl bg-amber-950/40 border border-amber-500/50 text-amber-200 text-xs sm:text-sm flex items-start gap-3 shadow-lg shadow-amber-950/30">
-          <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
-          <div className="space-y-1">
-            <div className="font-bold font-mono uppercase text-amber-300 text-xs tracking-wider">
-              AI Metadata Provenance Marker Detected
+        <div className="p-3.5 rounded-lg bg-[#171C19] border border-[#D9AB68]/50 text-[#D9AB68] text-xs flex items-start gap-3">
+          <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+          <div className="space-y-0.5">
+            <div className="font-bold font-mono uppercase text-[11px] tracking-wider">
+              AI Metadata Provenance Marker Detected in Media Container
             </div>
-            <p className="leading-relaxed">
-              This file's metadata says it was created or edited with AI (
-              <strong className="text-white">
+            <p className="text-[#A0AAA1] leading-relaxed text-xs">
+              Embedded metadata declares AI generation or editing (
+              <strong className="text-[#F0F2ED]">
                 {result.provenance.declaredSourceType || result.provenance.toolStrings.join(', ') || 'Metadata Marker'}
               </strong>
-              ). The classifier verdict below only measures full AI generation.
+              ). The neural classifier verdict below independently measures full synthetic generative synthesis.
             </p>
           </div>
         </div>
       )}
 
-      {/* Main Verdict Card */}
-      <div className={`p-6 sm:p-8 rounded-2xl ${status.bgColor} border ${status.borderColor} relative overflow-hidden shadow-2xl ${status.glowColor}`}>
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-          <div className="space-y-3">
+      {/* Section 1: Primary Forensic Examination Report Header */}
+      <div className={`p-7 sm:p-8 rounded-2xl ${status.bgColor} border-2 ${status.borderColor} relative shadow-sm`}>
+        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
+          
+          <div className="space-y-3 flex-1">
             <div className="flex flex-wrap items-center gap-2">
-              <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider font-mono ${status.textColor} bg-black/40 border border-current`}>
-                <StatusIcon className="w-4 h-4" />
-                {status.badgeText}
+              <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-mono font-extrabold uppercase tracking-wider ${status.textColor} bg-white border ${status.borderColor} shadow-2xs`}>
+                <StatusIcon className="w-3.5 h-3.5" />
+                {status.shortLabel}
               </span>
-              <span className="text-xs font-mono text-slate-400 bg-black/30 px-2.5 py-1 rounded border border-slate-700">
-                REF: {result.id}
+              <span className="text-xs font-mono font-bold text-slate-700 bg-white px-3 py-1 rounded-md border border-slate-300 shadow-2xs">
+                AUDIT ID: {result.id}
               </span>
-              <span className="text-xs font-mono px-2 py-1 rounded border flex items-center gap-1 text-cyan-300 bg-cyan-950/60 border-cyan-800/40">
-                <Sparkles className="w-3 h-3 text-cyan-400" />
+              <span className="text-xs font-mono font-bold text-blue-700 bg-white px-3 py-1 rounded-md border border-blue-200 shadow-2xs flex items-center gap-1.5">
+                <Cpu className="w-3.5 h-3.5 text-blue-600" />
                 {result.aiClassification?.status === 'success' 
-                  ? `${result.aiClassification.modelName} & 2D-FFT` 
-                  : 'Real 2D-FFT & Metadata'}
+                  ? result.aiClassification.modelName 
+                  : 'Deterministic 2D-FFT & Metadata'}
               </span>
             </div>
 
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-white font-heading">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-slate-950 font-sans tracking-tight">
               {status.label}
             </h1>
 
-            <p className="text-slate-300 text-xs sm:text-sm max-w-2xl leading-relaxed">
+            <p className="text-sm sm:text-base text-slate-700 max-w-2xl leading-relaxed font-normal">
               {result.aiClassification && result.aiClassification.status === 'success' ? (
                 result.aiClassification.predictedClass === 'INCONCLUSIVE' ? (
                   <span>
-                    The model cannot reliably distinguish this image from non-AI photography. Additional manual verification is required. Evaluated by <strong>{result.aiClassification.modelName}</strong> ({result.aiClassification.modelId}) on CPU alongside 2D-FFT frequency analysis.
+                    The model cannot reliably separate this image from camera photography. Additional manual verification is advised. Evaluated via <strong>{result.aiClassification.modelName}</strong> ({result.aiClassification.modelId}) alongside radial 2D-FFT frequency domain analysis.
                   </span>
                 ) : (
                   <span>
-                    The image was processed through the pretrained <strong>{result.aiClassification.modelName}</strong> ({result.aiClassification.modelId}) on CPU, alongside mathematical <strong>2D Fast Fourier Transform (FFT) log-magnitude spectrum</strong> and EXIF provenance extraction.
+                    Image inspected via fine-tuned <strong>{result.aiClassification.modelName}</strong> ({result.aiClassification.modelId}) on CPU, alongside mathematical <strong>2D Fast Fourier Transform (FFT) log-magnitude spectrum</strong> and EXIF provenance extraction.
                   </span>
                 )
               ) : (
                 <span>
-                  The image was processed through Python/NumPy to calculate its actual <strong>2D Fast Fourier Transform (FFT) log-magnitude spectrum</strong> and extract embedded EXIF headers. The neural classifier is currently unavailable ({result.aiClassification?.errorMessage || 'not initialized'}).
+                  Processed through NumPy to calculate authentic <strong>2D Fast Fourier Transform (FFT) log-magnitude spectrum</strong> and extract camera EXIF tags. The neural classifier is currently offline ({result.aiClassification?.errorMessage || 'not loaded'}).
                 </span>
               )}
             </p>
           </div>
 
-          {/* Confidence Score Pill */}
-          <div className="shrink-0 p-5 rounded-2xl bg-black/50 border border-slate-800 min-w-[220px] text-center">
-            <div className="text-[11px] font-mono text-slate-400 uppercase tracking-wider mb-1">
-              AI Model Classification
+          {/* Model Activation & Confidence Score Metric Box */}
+          <div className="shrink-0 p-6 rounded-2xl bg-white border-2 border-slate-200 min-w-[260px] text-center shadow-xs">
+            <div className="text-xs font-mono text-slate-500 uppercase tracking-wider mb-1.5 font-extrabold">
+              MODEL CLASSIFICATION ACTIVATION
             </div>
+
             {result.aiClassification && result.aiClassification.status === 'success' ? (
               <div>
-                <div className="text-xl sm:text-2xl font-extrabold font-heading tracking-tight flex items-center justify-center gap-1.5">
-                  <span className={
-                    result.aiClassification.predictedClass === 'FAKE'
-                      ? 'text-red-400'
-                      : result.aiClassification.predictedClass === 'INCONCLUSIVE'
-                      ? 'text-amber-400'
-                      : 'text-emerald-400'
-                  }>
-                    {result.aiClassification.predictedClass === 'FAKE'
-                      ? 'Likely fully AI-generated'
-                      : result.aiClassification.predictedClass === 'REAL'
-                      ? 'No signs of full AI generation'
-                      : 'Inconclusive'}
+                <div className="text-3xl sm:text-4xl font-black font-mono tracking-tight flex items-center justify-center gap-2">
+                  <span className={status.textColor}>
+                    {result.aiClassification.predictedClass}
                   </span>
-                  <span className="text-base text-slate-300 font-mono">
+                  <span className="text-base text-slate-600 font-bold font-mono">
                     ({result.aiClassification.confidenceScore?.toFixed(1)}%)
                   </span>
                 </div>
-                <div className="text-[10px] text-slate-400 mt-1 max-w-[210px] mx-auto leading-tight font-mono">
-                  AI: {(result.aiClassification.scores?.FAKE ? result.aiClassification.scores.FAKE * 100 : 0).toFixed(1)}% | Non-AI: {(result.aiClassification.scores?.REAL ? result.aiClassification.scores.REAL * 100 : 0).toFixed(1)}%
+                <div className="text-xs text-slate-700 mt-2 font-mono font-bold">
+                  FAKE: {(result.aiClassification.scores?.FAKE ? result.aiClassification.scores.FAKE * 100 : 0).toFixed(1)}% | REAL: {(result.aiClassification.scores?.REAL ? result.aiClassification.scores.REAL * 100 : 0).toFixed(1)}%
                 </div>
               </div>
             ) : (result.confidenceScore != null) ? (
               <div>
-                <div className="text-3xl font-extrabold text-white font-heading tracking-tight">
+                <div className="text-3xl sm:text-4xl font-black font-mono text-slate-950">
                   {result.confidenceScore.toFixed(1)}%
                 </div>
-                <div className="text-[10px] text-slate-400 mt-1 max-w-[170px] mx-auto leading-tight">
+                <div className="text-xs text-slate-500 mt-1 font-mono font-bold">
                   Forensic Signal Activation
                 </div>
               </div>
             ) : (
               <div>
-                <div className="text-xl font-bold text-amber-400 font-heading">
+                <div className="text-2xl font-black text-amber-700 font-mono">
                   WITHHELD
                 </div>
-                <div className="text-[10px] text-amber-300/80 mt-1 max-w-[170px] mx-auto leading-tight">
+                <div className="text-xs text-slate-600 mt-1 font-mono font-medium">
                   {result.aiClassification?.errorMessage ? 'AI classifier offline.' : 'Model not connected.'}
                 </div>
               </div>
             )}
           </div>
+
         </div>
 
-        {/* Fixed Scope Notice */}
-        <div className="mt-5 pt-3 border-t border-slate-800/80 text-[11px] text-slate-400 flex items-start gap-2">
-          <Info className="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
+        {/* Forensic Scope Reminder Notice */}
+        <div className="mt-5 pt-3.5 border-t border-slate-200 text-xs text-slate-600 flex items-start gap-2 font-mono font-medium">
+          <Info className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
           <p className="leading-relaxed">
-            This tool estimates whether an image is fully AI-generated. It cannot tell whether a real photo was edited, retouched, upscaled or AI-enhanced. Absence of detection is not proof the image is untouched.
+            Scope Boundary: This system estimates whether an image is fully AI-generated. It cannot determine whether an authentic photograph was edited, retouched, or color-graded. Absence of detection is not proof the image is untouched.
           </p>
         </div>
       </div>
 
-      {/* Pretrained Neural AI Model Card */}
+      {/* Section 2: Technical Image Properties Strip */}
+      {result.metadataAnalysis && (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5 text-xs font-mono">
+          <div className="p-4 rounded-xl bg-white border-2 border-slate-200 shadow-2xs">
+            <span className="text-slate-500 text-xs uppercase block font-bold">RESOLUTION</span>
+            <span className="font-black text-slate-950 text-base mt-1 block">
+              {result.metadataAnalysis.dimensions.width} × {result.metadataAnalysis.dimensions.height}
+            </span>
+          </div>
+          <div className="p-4 rounded-xl bg-white border-2 border-slate-200 shadow-2xs">
+            <span className="text-slate-500 text-xs uppercase block font-bold">FILE SIZE</span>
+            <span className="font-black text-slate-950 text-base mt-1 block">
+              {result.fileSizeFormatted}
+            </span>
+          </div>
+          <div className="p-4 rounded-xl bg-white border-2 border-slate-200 shadow-2xs">
+            <span className="text-slate-500 text-xs uppercase block font-bold">FORMAT / COLOR</span>
+            <span className="font-black text-slate-950 text-base mt-1 block">
+              {result.metadataAnalysis.format} ({result.metadataAnalysis.colorMode})
+            </span>
+          </div>
+          <div className="p-4 rounded-xl bg-white border-2 border-slate-200 shadow-2xs">
+            <span className="text-slate-500 text-xs uppercase block font-bold">ASPECT RATIO</span>
+            <span className="font-black text-slate-950 text-base mt-1 block">
+              {result.metadataAnalysis.dimensions.aspectRatio || `${result.metadataAnalysis.dimensions.width}:${result.metadataAnalysis.dimensions.height}`}
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* Section 3: Vision Transformer Classifier Technical Breakdown */}
       {result.aiClassification && (
-        <div className="glass-card rounded-2xl border border-slate-800 bg-slate-900/70 p-6 shadow-xl space-y-5">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between pb-4 border-b border-slate-800 gap-3">
-            <div className="flex items-center gap-2.5">
-              <div className="p-2 rounded-xl bg-violet-500/10 border border-violet-500/30 text-violet-400">
+        <div className="rounded-2xl border-2 border-slate-200 bg-white p-6 sm:p-7 space-y-5 shadow-sm">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between pb-4 border-b border-slate-200 gap-3">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-xl bg-blue-50 border-2 border-blue-200 text-blue-600 shadow-2xs">
                 <Cpu className="w-5 h-5" />
               </div>
               <div>
-                <div className="text-xs font-mono font-bold uppercase tracking-wider text-slate-400">
-                  Pretrained Neural Classifier (CPU)
+                <div className="text-xs font-mono uppercase tracking-wider text-slate-500 font-bold">
+                  NEURAL CLASSIFIER INFERENCE
                 </div>
-                <h3 className="text-base sm:text-lg font-bold text-white font-heading">
+                <h3 className="text-lg sm:text-xl font-black text-slate-950 font-sans">
                   {result.aiClassification.modelName}
                 </h3>
               </div>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-[11px] font-mono px-2.5 py-1 rounded bg-black/50 text-cyan-300 border border-slate-700">
+            <div className="flex flex-wrap items-center gap-2 font-mono text-xs">
+              <span className="px-3 py-1 rounded-md bg-slate-100 text-blue-700 font-bold border border-slate-200">
                 {result.aiClassification.modelId}
               </span>
-              <span className={`text-[11px] font-mono px-2.5 py-1 rounded font-semibold uppercase ${
+              <span className={`px-3 py-1 rounded-md font-extrabold uppercase border ${
                 result.aiClassification.status === 'success'
-                  ? 'bg-emerald-950/70 text-emerald-300 border border-emerald-500/40'
-                  : 'bg-amber-950/70 text-amber-300 border border-amber-500/40'
+                  ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
+                  : 'bg-amber-50 text-amber-800 border-amber-300'
               }`}>
                 STATUS: {result.aiClassification.status}
               </span>
@@ -325,253 +386,137 @@ export const ResultsDashboard: FC<ResultsDashboardProps> = ({
           </div>
 
           {result.aiClassification.status === 'success' ? (
-            <div className="space-y-5">
-              {/* Score bar & breakdown */}
-              <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
-                <div className="md:col-span-5 space-y-2">
-                  <div className="text-xs text-slate-400 font-mono">Predicted Classification:</div>
-                  <div className="flex items-center gap-3">
-                    <span className={`text-xl sm:text-2xl font-extrabold font-mono px-3 py-1 rounded-xl border ${
-                      result.aiClassification.predictedClass === 'FAKE'
-                        ? 'text-red-300 bg-red-950/60 border-red-500/40'
-                        : result.aiClassification.predictedClass === 'INCONCLUSIVE'
-                        ? 'text-amber-300 bg-amber-950/60 border-amber-500/40'
-                        : 'text-emerald-300 bg-emerald-950/60 border-emerald-500/40'
-                    }`}>
-                      {result.aiClassification.predictedClass === 'FAKE'
-                        ? 'Likely fully AI-generated'
-                        : result.aiClassification.predictedClass === 'REAL'
-                        ? 'No signs of full AI generation'
-                        : 'Inconclusive'}
-                    </span>
-                    <span className="text-xs text-slate-300 font-medium">
-                      {result.aiClassification.predictedLabelDescription || ''}
-                    </span>
-                  </div>
-                  {result.aiClassification.inferenceTimeMs !== null && (
-                    <div className="text-[11px] font-mono text-slate-400">
-                      Inference latency: <span className="text-cyan-400">{result.aiClassification.inferenceTimeMs} ms</span> on CPU
-                    </div>
-                  )}
+            <div className="space-y-4">
+              
+              {/* Dual Probability Bar */}
+              <div className="bg-slate-50 p-5 rounded-xl border border-slate-200 space-y-3 font-mono">
+                <div className="flex justify-between items-center text-sm font-bold">
+                  <span className="text-rose-700">
+                    Likely AI-Generated: {result.aiClassification.scores?.FAKE !== undefined ? (result.aiClassification.scores.FAKE * 100).toFixed(2) : 0}%
+                  </span>
+                  <span className="text-emerald-700">
+                    No Signs of AI: {result.aiClassification.scores?.REAL !== undefined ? (result.aiClassification.scores.REAL * 100).toFixed(2) : 0}%
+                  </span>
                 </div>
 
-                <div className="md:col-span-7 space-y-3 bg-black/40 p-4 rounded-xl border border-slate-800">
-                  <div className="flex justify-between items-center text-xs font-mono">
-                    <span className="text-red-400 font-semibold">
-                      Likely AI-Generated: {result.aiClassification.scores?.FAKE !== undefined ? (result.aiClassification.scores.FAKE * 100).toFixed(2) : 0}%
-                    </span>
-                    <span className="text-emerald-400 font-semibold">
-                      No signs of AI: {result.aiClassification.scores?.REAL !== undefined ? (result.aiClassification.scores.REAL * 100).toFixed(2) : 0}%
-                    </span>
-                  </div>
+                <div className="w-full h-3 rounded-full overflow-hidden bg-slate-200 flex border border-slate-300">
+                  <div
+                    className="bg-rose-600 h-full transition-all duration-500"
+                    style={{ width: `${(result.aiClassification.scores?.FAKE || 0) * 100}%` }}
+                    title={`Fake Score: ${((result.aiClassification.scores?.FAKE || 0) * 100).toFixed(2)}%`}
+                  />
+                  <div
+                    className="bg-emerald-600 h-full transition-all duration-500"
+                    style={{ width: `${(result.aiClassification.scores?.REAL || 0) * 100}%` }}
+                    title={`Real Score: ${((result.aiClassification.scores?.REAL || 0) * 100).toFixed(2)}%`}
+                  />
+                </div>
 
-                  {/* Dual Progress Bar */}
-                  <div className="w-full h-3 rounded-full overflow-hidden bg-slate-800 flex">
-                    <div
-                      className="bg-gradient-to-r from-red-600 to-rose-500 h-full transition-all duration-500"
-                      style={{ width: `${(result.aiClassification.scores?.FAKE || 0) * 100}%` }}
-                      title={`Fake Score: ${((result.aiClassification.scores?.FAKE || 0) * 100).toFixed(2)}%`}
-                    />
-                    <div
-                      className="bg-gradient-to-r from-emerald-500 to-teal-400 h-full transition-all duration-500"
-                      style={{ width: `${(result.aiClassification.scores?.REAL || 0) * 100}%` }}
-                      title={`Real Score: ${((result.aiClassification.scores?.REAL || 0) * 100).toFixed(2)}%`}
-                    />
-                  </div>
-
-                  {/* Decision Cutoff & Uncertain Band */}
-                  <div className="text-[11px] font-mono text-slate-400 flex flex-wrap justify-between pt-1 border-t border-slate-800/80 gap-2">
+                <div className="text-xs text-slate-700 flex flex-wrap justify-between pt-2 border-t border-slate-200 gap-2 font-medium">
+                  <span>
+                    Decision Cutoff: <strong className="text-slate-950 font-bold">{((result.aiClassification.decisionThreshold ?? 0.50) * 100).toFixed(0)}%</strong>
+                  </span>
+                  <span>
+                    Inconclusive Window: <strong className="text-amber-800 font-bold">±{((result.aiClassification.uncertainBand ?? 0.10) * 100).toFixed(0)}%</strong> ({(((result.aiClassification.decisionThreshold ?? 0.50) - (result.aiClassification.uncertainBand ?? 0.10)) * 100).toFixed(0)}%–{(((result.aiClassification.decisionThreshold ?? 0.50) + (result.aiClassification.uncertainBand ?? 0.10)) * 100).toFixed(0)}%)
+                  </span>
+                  {result.aiClassification.inferenceTimeMs !== null && (
                     <span>
-                      Decision Cutoff: <strong className="text-slate-200">{((result.aiClassification.decisionThreshold ?? 0.50) * 100).toFixed(0)}%</strong>
+                      Latency: <strong className="text-blue-700 font-bold">{result.aiClassification.inferenceTimeMs} ms</strong> on CPU
                     </span>
-                    <span>
-                      Inconclusive Band: <strong className="text-amber-400">±{((result.aiClassification.uncertainBand ?? 0.10) * 100).toFixed(0)}%</strong> ({(((result.aiClassification.decisionThreshold ?? 0.50) - (result.aiClassification.uncertainBand ?? 0.10)) * 100).toFixed(0)}%–{(((result.aiClassification.decisionThreshold ?? 0.50) + (result.aiClassification.uncertainBand ?? 0.10)) * 100).toFixed(0)}%)
-                    </span>
-                  </div>
-
-                  {/* Raw Logits */}
-                  {result.aiClassification.rawLogits && (
-                    <div className="text-[10px] font-mono text-slate-500 flex justify-between pt-0.5">
-                      <span>Raw Model Logit (Fake): {result.aiClassification.rawLogits.FAKE}</span>
-                      <span>Raw Model Logit (Real): {result.aiClassification.rawLogits.REAL}</span>
-                    </div>
                   )}
                 </div>
               </div>
 
-              {/* Explanations, Calibration notice & Scope */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-                <div className="p-3.5 rounded-xl bg-slate-950/80 border border-slate-800 text-xs space-y-1.5">
-                  <div className="font-semibold text-amber-300 font-mono text-[11px] flex items-center gap-1.5">
-                    <Info className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+              {/* Calibration Statement & Scope Limitation */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs sm:text-sm">
+                <div className="p-4 rounded-xl bg-amber-50/70 border border-amber-200 space-y-1.5">
+                  <div className="font-bold text-amber-900 font-mono text-xs flex items-center gap-1.5">
+                    <Info className="w-4 h-4 shrink-0 text-amber-700" />
                     <span>Uncalibrated Probability Notice</span>
                   </div>
-                  <p className="text-[11px] text-slate-400 leading-relaxed">
+                  <p className="text-slate-800 leading-relaxed font-sans font-medium text-xs sm:text-sm">
                     {result.aiClassification.calibrationStatement}
                   </p>
                 </div>
 
-                <div className="p-3.5 rounded-xl bg-slate-950/80 border border-slate-800 text-xs space-y-1.5">
-                  <div className="font-semibold text-cyan-300 font-mono text-[11px] flex items-center gap-1.5">
-                    <ShieldAlert className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                <div className="p-4 rounded-xl bg-blue-50/70 border border-blue-200 space-y-1.5">
+                  <div className="font-bold text-blue-950 font-mono text-xs flex items-center gap-1.5">
+                    <ShieldAlert className="w-4 h-4 shrink-0 text-blue-600" />
                     <span>Full AI vs Editing Scope</span>
                   </div>
-                  <p className="text-[11px] text-slate-400 leading-relaxed">
+                  <p className="text-slate-800 leading-relaxed font-sans font-medium text-xs sm:text-sm">
                     {result.aiClassification.scopeLimitation}
                   </p>
                 </div>
               </div>
 
-              {/* Fixed Scope Notice */}
-              <div className="p-3 rounded-xl bg-black/40 border border-slate-800/80 text-[11px] text-slate-400 flex items-start gap-2">
-                <Info className="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
-                <p className="leading-relaxed">
-                  This tool estimates whether an image is fully AI-generated. It cannot tell whether a real photo was edited, retouched, upscaled or AI-enhanced. Absence of detection is not proof the image is untouched.
-                </p>
-              </div>
             </div>
           ) : (
-            <div className="p-5 rounded-xl bg-amber-950/30 border border-amber-500/40 text-amber-300 text-xs space-y-3">
+            <div className="p-5 rounded-xl bg-amber-50 border-2 border-amber-300 text-amber-900 text-xs sm:text-sm space-y-2">
               <div className="font-bold font-mono text-sm flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <AlertTriangle className="w-4 h-4 text-amber-400" />
-                  <span>AI Inference Engine Offline / Unavailable</span>
+                  <AlertTriangle className="w-5 h-5 text-amber-700" />
+                  <span>AI Inference Engine Offline</span>
                 </div>
                 <button
                   onClick={onNewAnalysis}
-                  className="px-3 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-200 text-xs font-mono font-medium transition-colors cursor-pointer"
+                  className="px-3 py-1.5 rounded-lg bg-amber-200 hover:bg-amber-300 border border-amber-400 text-amber-950 text-xs font-mono font-bold cursor-pointer"
                 >
                   Retry Analysis
                 </button>
               </div>
-              <p className="text-slate-300 text-xs leading-relaxed">
-                {result.aiClassification.errorMessage || 'Could not load model weights or neural backend is initializing.'}
+              <p className="text-slate-800 text-xs sm:text-sm leading-relaxed font-medium">
+                {result.aiClassification.errorMessage || 'Could not load neural model weights. Deterministic 2D-FFT frequency inspection and EXIF extraction remain fully active below.'}
               </p>
-              <div className="text-[11px] text-amber-400/90 font-mono">
-                TruthLens maintains integrity: no synthetic or mock scores were fabricated. Deterministic 2D-FFT and metadata inspection remain active below.
-              </div>
             </div>
           )}
         </div>
       )}
 
-      {/* Provenance Clues Panel */}
-      {result.provenance && (
-        <div className="glass-card rounded-2xl border border-slate-800 bg-slate-900/70 p-6 shadow-xl space-y-4">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between pb-3 border-b border-slate-800 gap-3">
-            <div className="flex items-center gap-2.5">
-              <div className={`p-2 rounded-xl border ${
-                result.provenance.aiSourceDeclared
-                  ? 'bg-amber-500/10 border-amber-500/30 text-amber-400'
-                  : 'bg-cyan-500/10 border-cyan-500/30 text-cyan-400'
-              }`}>
-                <ShieldCheck className="w-5 h-5" />
-              </div>
-              <div>
-                <div className="text-xs font-mono font-bold uppercase tracking-wider text-slate-400">
-                  Provenance Clues & Content Credentials
-                </div>
-                <h3 className="text-base sm:text-lg font-bold text-white font-heading">
-                  Metadata & Container Verification
-                </h3>
-              </div>
-            </div>
-
-            <span className={`text-[11px] font-mono px-2.5 py-1 rounded font-semibold uppercase ${
-              result.provenance.aiSourceDeclared
-                ? 'bg-amber-950/70 text-amber-300 border border-amber-500/40'
-                : 'bg-slate-800 text-slate-300 border border-slate-700'
-            }`}>
-              {result.provenance.aiSourceDeclared ? 'AI Source Declared' : 'No AI Source Declared'}
-            </span>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs font-mono">
-            <div className="p-3 rounded-xl bg-black/40 border border-slate-800/80 space-y-1">
-              <span className="text-slate-500 text-[10px] uppercase block">IPTC Source Type</span>
-              <span className={`font-semibold block ${result.provenance.declaredSourceType ? 'text-amber-300' : 'text-slate-300'}`}>
-                {result.provenance.declaredSourceType || 'None declared'}
-              </span>
-            </div>
-
-            <div className="p-3 rounded-xl bg-black/40 border border-slate-800/80 space-y-1">
-              <span className="text-slate-500 text-[10px] uppercase block">Tool Markers</span>
-              <span className="font-semibold text-slate-200 block truncate" title={result.provenance.toolStrings.join(', ')}>
-                {result.provenance.toolStrings.length > 0 ? result.provenance.toolStrings.join(', ') : 'None detected'}
-              </span>
-            </div>
-
-            <div className="p-3 rounded-xl bg-black/40 border border-slate-800/80 space-y-1">
-              <span className="text-slate-500 text-[10px] uppercase block">Content Credentials (C2PA)</span>
-              <span className={`font-semibold block ${result.provenance.c2paPresent ? 'text-cyan-300' : 'text-slate-400'}`}>
-                {result.provenance.c2paPresent 
-                  ? (result.provenance.c2paVerified ? 'C2PA Manifest Verified' : 'C2PA Marker Present (Unverified)') 
-                  : 'No C2PA manifest found'}
-              </span>
-            </div>
-          </div>
-
-          {result.provenance.notes.length > 0 && (
-            <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800/60 space-y-1 text-xs">
-              <span className="text-slate-400 font-mono text-[11px] block font-semibold">Provenance Observations:</span>
-              <ul className="list-disc list-inside space-y-1 text-slate-300 text-[11px]">
-                {result.provenance.notes.map((note, idx) => (
-                  <li key={idx}>{note}</li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          <div className="text-[10px] text-slate-500 font-mono pt-1">
-            * Note: Provenance clues inspect container tags only. They do not alter the classifier score and cannot detect edits from raw pixels.
-          </div>
-        </div>
-      )}
-
-      {/* Grid: Media Inspector & Forensic Breakdown */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+      {/* Section 4: Grid of Media Inspector (7 cols) & Forensic Evidence / Metadata (5 cols) */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         
-        {/* Left Column: Media Inspector (7 cols) */}
-        <div className="lg:col-span-7 space-y-6">
-          <div className="glass-card rounded-2xl border border-slate-800 bg-slate-900/60 p-5 shadow-lg">
+        {/* Left Column: Multi-View Media Inspector */}
+        <div className="lg:col-span-7 space-y-5">
+          <div className="rounded-2xl border-2 border-slate-200 bg-white p-5 sm:p-6 shadow-sm">
             
-            {/* Visualizer Header with Layer Controls */}
-            <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-slate-800">
-              <div className="flex items-center gap-2">
-                <Layers className="w-4 h-4 text-cyan-400" />
-                <span className="text-xs font-bold text-white font-mono uppercase tracking-wider">
+            {/* Visualizer Controls */}
+            <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-slate-200">
+              <div className="flex items-center gap-2.5">
+                <Layers className="w-5 h-5 text-blue-600" />
+                <span className="text-sm font-black text-slate-950 font-mono uppercase tracking-wider">
                   Forensic Media Inspector
                 </span>
               </div>
 
-              {/* Layer switchers */}
-              <div className="flex items-center gap-1 bg-slate-950/80 p-1 rounded-lg border border-slate-800">
+              {/* Overlay Layer Selector */}
+              <div className="flex items-center gap-1.5 bg-slate-100 p-1.5 rounded-xl border border-slate-200 text-xs font-mono font-bold">
                 <button
                   onClick={() => setActiveOverlay('standard')}
-                  className={`px-3 py-1 rounded text-xs font-medium transition-colors cursor-pointer ${
+                  className={`px-3 py-1.5 rounded-lg transition-colors cursor-pointer ${
                     activeOverlay === 'standard'
-                      ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
-                      : 'text-slate-400 hover:text-white'
+                      ? 'bg-blue-600 text-white shadow-xs'
+                      : 'text-slate-700 hover:text-blue-600'
                   }`}
                 >
-                  Original Image
+                  Spatial Image
                 </button>
                 <button
                   onClick={() => setActiveOverlay('fft')}
-                  className={`px-3 py-1 rounded text-xs font-medium transition-colors cursor-pointer ${
+                  className={`px-3 py-1.5 rounded-lg transition-colors cursor-pointer ${
                     activeOverlay === 'fft'
-                      ? 'bg-violet-500/20 text-violet-300 border border-violet-500/40'
-                      : 'text-slate-400 hover:text-white'
+                      ? 'bg-blue-600 text-white shadow-xs'
+                      : 'text-slate-700 hover:text-blue-600'
                   }`}
                 >
-                  Computed 2D-FFT
+                  2D-FFT Spectrum
                 </button>
                 <button
                   onClick={() => setActiveOverlay('split')}
-                  className={`px-3 py-1 rounded text-xs font-medium transition-colors cursor-pointer ${
+                  className={`px-3 py-1.5 rounded-lg transition-colors cursor-pointer ${
                     activeOverlay === 'split'
-                      ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
-                      : 'text-slate-400 hover:text-white'
+                      ? 'bg-blue-600 text-white shadow-xs'
+                      : 'text-slate-700 hover:text-blue-600'
                   }`}
                 >
                   Side-by-Side
@@ -579,8 +524,14 @@ export const ResultsDashboard: FC<ResultsDashboardProps> = ({
               </div>
             </div>
 
-            {/* Visualizer Display */}
-            <div className="relative aspect-video w-full bg-black rounded-xl overflow-hidden my-4 flex items-center justify-center border border-slate-800">
+            {/* Media Display Viewport (Dark Chamber for Diagnostic Imaging) */}
+            <div className="relative aspect-video w-full bg-slate-950 rounded-xl overflow-hidden my-4 flex items-center justify-center border border-slate-800 shadow-inner">
+              {/* Corner Reticles */}
+              <div className="reticle-corner-blue-tl" />
+              <div className="reticle-corner-blue-tr" />
+              <div className="reticle-corner-blue-bl" />
+              <div className="reticle-corner-blue-br" />
+
               {activeOverlay === 'standard' && (
                 <img
                   src={result.mediaUrl}
@@ -590,7 +541,7 @@ export const ResultsDashboard: FC<ResultsDashboardProps> = ({
               )}
 
               {activeOverlay === 'fft' && (
-                <div className="relative w-full h-full flex items-center justify-center bg-[#070A13]">
+                <div className="relative w-full h-full flex items-center justify-center bg-slate-950">
                   {result.frequencyAnalysis ? (
                     <img
                       src={result.frequencyAnalysis.fftVisualizationBase64}
@@ -598,29 +549,29 @@ export const ResultsDashboard: FC<ResultsDashboardProps> = ({
                       className="w-full h-full object-contain"
                     />
                   ) : (
-                    <div className="text-xs text-slate-500 font-mono">
+                    <div className="text-xs text-slate-400 font-mono">
                       FFT visualization not available for this record.
                     </div>
                   )}
-                  <div className="absolute top-3 left-3 bg-black/80 px-2.5 py-1 rounded border border-cyan-500/40 text-[10px] font-mono text-cyan-300">
-                    REAL 2D-FFT MAGNITUDE SPECTRUM (NumPy)
+                  <div className="absolute top-2.5 left-2.5 bg-slate-900/90 px-3 py-1 rounded-md border border-slate-700 text-xs font-mono text-sky-400 font-bold shadow-sm">
+                    NUMPY 2D-FFT LOG-MAGNITUDE SPECTRUM
                   </div>
                 </div>
               )}
 
               {activeOverlay === 'split' && (
                 <div className="grid grid-cols-2 w-full h-full divide-x divide-slate-800">
-                  <div className="relative h-full flex items-center justify-center bg-black p-2">
+                  <div className="relative h-full flex items-center justify-center bg-slate-950 p-2">
                     <img
                       src={result.mediaUrl}
                       alt={result.fileName}
                       className="w-full h-full object-contain"
                     />
-                    <div className="absolute bottom-2 left-2 bg-black/70 px-2 py-0.5 rounded text-[9px] font-mono text-slate-300">
+                    <div className="absolute bottom-2 left-2 bg-slate-900/90 px-2 py-0.5 rounded text-[10px] font-mono text-slate-200">
                       Spatial Domain
                     </div>
                   </div>
-                  <div className="relative h-full flex items-center justify-center bg-[#070A13] p-2">
+                  <div className="relative h-full flex items-center justify-center bg-slate-950 p-2">
                     {result.frequencyAnalysis && (
                       <img
                         src={result.frequencyAnalysis.fftVisualizationBase64}
@@ -628,7 +579,7 @@ export const ResultsDashboard: FC<ResultsDashboardProps> = ({
                         className="w-full h-full object-contain"
                       />
                     )}
-                    <div className="absolute bottom-2 left-2 bg-black/70 px-2 py-0.5 rounded text-[9px] font-mono text-cyan-300">
+                    <div className="absolute bottom-2 left-2 bg-slate-900/90 px-2 py-0.5 rounded text-[10px] font-mono text-sky-400 font-bold">
                       Frequency Domain (FFT)
                     </div>
                   </div>
@@ -636,132 +587,168 @@ export const ResultsDashboard: FC<ResultsDashboardProps> = ({
               )}
             </div>
 
-            {/* Scientific Explanation of the FFT */}
-            <div className="p-3.5 rounded-xl bg-slate-950/80 border border-slate-800 text-xs text-slate-300 space-y-2">
-              <div className="font-semibold text-cyan-300 font-mono text-[11px] flex items-center gap-1.5">
-                <Info className="w-3.5 h-3.5 text-cyan-400" />
-                <span>About this Frequency Spectrum</span>
-              </div>
-              <p className="text-[11px] text-slate-400 leading-relaxed">
-                The image above was generated by taking the 2D Discrete Fourier Transform of your image's pixel matrix. The bright central star represents the zero-frequency DC component (average illumination), while the radiating spokes show periodic frequency harmonics across angles.
-              </p>
-              <div className="text-[10px] font-mono text-amber-300/80 bg-amber-950/20 p-2 rounded border border-amber-900/30">
-                Note: Frequency distribution is an exploratory forensic metric. It does NOT alone determine whether an image is AI-generated.
-              </div>
-            </div>
-
-            {/* Radial Energy Distribution */}
+            {/* Radial Spectral Energy Distribution */}
             {result.frequencyAnalysis && (
-              <div className="mt-5 pt-4 border-t border-slate-800">
-                <div className="text-xs font-mono font-bold uppercase text-white mb-3 flex items-center justify-between">
+              <div className="mt-4 pt-4 border-t border-slate-200">
+                <div className="text-xs font-mono font-black uppercase text-slate-950 mb-3 flex items-center justify-between">
                   <span>Radial Spectral Energy Bands</span>
-                  <span className="text-[11px] text-slate-400 font-normal">Calculated across 512×512 radius</span>
+                  <span className="text-xs text-slate-500 font-medium">Calculated across 512×512 radius</span>
                 </div>
 
-                <div className="grid grid-cols-3 gap-3 text-center">
-                  <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800">
-                    <div className="text-[10px] font-mono text-slate-400 uppercase">Low Frequency (Core)</div>
-                    <div className="text-xl font-bold text-cyan-300 font-heading mt-1">
+                <div className="grid grid-cols-3 gap-3 text-center font-mono">
+                  <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
+                    <div className="text-[10px] text-slate-500 uppercase font-bold">LOW FREQ (CORE)</div>
+                    <div className="text-xl font-black text-blue-700 mt-0.5">
                       {result.frequencyAnalysis.energyDistribution.lowFrequencyPct}%
                     </div>
-                    <div className="text-[9px] text-slate-500 mt-0.5">Broad shapes & contrast</div>
+                    <div className="text-[10px] text-slate-600 mt-0.5 font-medium">Illumination & shapes</div>
                   </div>
 
-                  <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800">
-                    <div className="text-[10px] font-mono text-slate-400 uppercase">Mid Frequency</div>
-                    <div className="text-xl font-bold text-violet-300 font-heading mt-1">
+                  <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
+                    <div className="text-[10px] text-slate-500 uppercase font-bold">MID FREQ (EDGES)</div>
+                    <div className="text-xl font-black text-slate-950 mt-0.5">
                       {result.frequencyAnalysis.energyDistribution.midFrequencyPct}%
                     </div>
-                    <div className="text-[9px] text-slate-500 mt-0.5">Edges & boundaries</div>
+                    <div className="text-[10px] text-slate-600 mt-0.5 font-medium">Boundaries & transitions</div>
                   </div>
 
-                  <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800">
-                    <div className="text-[10px] font-mono text-slate-400 uppercase">High Frequency (Outer)</div>
-                    <div className="text-xl font-bold text-emerald-300 font-heading mt-1">
+                  <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
+                    <div className="text-[10px] text-slate-500 uppercase font-bold">HIGH FREQ (TEXTURE)</div>
+                    <div className="text-xl font-black text-emerald-700 mt-0.5">
                       {result.frequencyAnalysis.energyDistribution.highFrequencyPct}%
                     </div>
-                    <div className="text-[9px] text-slate-500 mt-0.5">Micro-texture & noise</div>
+                    <div className="text-[10px] text-slate-600 mt-0.5 font-medium">Micro-grain & noise</div>
                   </div>
                 </div>
               </div>
             )}
 
-          </div>
-        </div>
+            {/* FFT Scientific Explanation */}
+            <div className="mt-4 p-4 rounded-xl bg-blue-50/70 border border-blue-200 text-xs text-slate-700 space-y-1">
+              <div className="font-bold text-blue-950 font-mono flex items-center gap-1.5">
+                <Info className="w-4 h-4 text-blue-600" />
+                <span>About this Frequency Spectrum</span>
+              </div>
+              <p className="leading-relaxed font-sans font-medium text-xs">
+                Generated via 2D Discrete Fourier Transform. The center represents baseline DC luminance, while radial dispersion measures edge harmonics and sensor noise. Frequency distribution serves as an exploratory metric and does not independently prove manipulation.
+              </p>
+            </div>
 
-        {/* Right Column: Evidence & Metadata Panels (5 cols) */}
-        <div className="lg:col-span-5 space-y-6">
-          
-          {/* Metadata Breakdown Panel */}
-          {result.metadataAnalysis && (
-            <div className="glass-card rounded-2xl border border-slate-800 bg-slate-900/60 p-6 shadow-lg space-y-4">
-              <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-                <h3 className="text-sm font-bold text-white font-mono uppercase tracking-wider flex items-center gap-2">
-                  <Activity className="w-4 h-4 text-cyan-400" />
-                  <span>Image Metadata Inspection</span>
-                </h3>
-                <span className="text-xs font-mono text-slate-400">
-                  {result.metadataAnalysis.format}
+          </div>
+
+          {/* Provenance Clues & Content Credentials Panel */}
+          {result.provenance && (
+            <div className="rounded-2xl border-2 border-slate-200 bg-white p-6 space-y-4 font-mono shadow-sm">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-200">
+                <div className="flex items-center gap-2.5">
+                  <ShieldCheck className="w-5 h-5 text-blue-600" />
+                  <span className="text-sm font-black text-slate-950 uppercase">
+                    Container Provenance & C2PA Credentials
+                  </span>
+                </div>
+                <span className={`text-xs px-3 py-1 rounded-md uppercase font-bold border ${
+                  result.provenance.aiSourceDeclared
+                    ? 'bg-amber-50 text-amber-900 border-amber-300'
+                    : 'bg-slate-100 text-slate-600 border-slate-200'
+                }`}>
+                  {result.provenance.aiSourceDeclared ? 'AI Source Declared' : 'No Declarations'}
                 </span>
               </div>
 
-              {/* Dimensions grid */}
-              <div className="grid grid-cols-2 gap-3 text-xs">
-                <div className="p-2.5 rounded-lg bg-slate-950/60 border border-slate-800">
-                  <span className="text-slate-500 block text-[10px] font-mono uppercase">Resolution</span>
-                  <span className="font-bold text-white font-mono">
-                    {result.metadataAnalysis.dimensions.width} × {result.metadataAnalysis.dimensions.height}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
+                  <span className="text-[10px] text-slate-500 uppercase block font-bold">IPTC SOURCE TYPE</span>
+                  <span className={`font-black text-xs block truncate ${result.provenance.declaredSourceType ? 'text-amber-800' : 'text-slate-700'}`}>
+                    {result.provenance.declaredSourceType || 'None declared'}
                   </span>
                 </div>
-                <div className="p-2.5 rounded-lg bg-slate-950/60 border border-slate-800">
-                  <span className="text-slate-500 block text-[10px] font-mono uppercase">Aspect Ratio</span>
-                  <span className="font-bold text-white font-mono">
-                    {result.metadataAnalysis.dimensions.aspectRatio || (result.metadataAnalysis.dimensions as any).aspect_ratio || 'N/A'}
+
+                <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
+                  <span className="text-[10px] text-slate-500 uppercase block font-bold">TOOL MARKERS</span>
+                  <span className="font-black text-xs text-slate-950 block truncate" title={result.provenance.toolStrings.join(', ')}>
+                    {result.provenance.toolStrings.length > 0 ? result.provenance.toolStrings.join(', ') : 'None detected'}
                   </span>
                 </div>
-                <div className="p-2.5 rounded-lg bg-slate-950/60 border border-slate-800">
-                  <span className="text-slate-500 block text-[10px] font-mono uppercase">Color Mode</span>
-                  <span className="font-bold text-white font-mono">
-                    {result.metadataAnalysis.colorMode}
-                  </span>
-                </div>
-                <div className="p-2.5 rounded-lg bg-slate-950/60 border border-slate-800">
-                  <span className="text-slate-500 block text-[10px] font-mono uppercase">Total Pixels</span>
-                  <span className="font-bold text-white font-mono">
-                    {(result.metadataAnalysis.dimensions.totalPixels ?? (result.metadataAnalysis.dimensions as any).total_pixels ?? (result.metadataAnalysis.dimensions.width * result.metadataAnalysis.dimensions.height))?.toLocaleString() ?? 'N/A'}
+
+                <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
+                  <span className="text-[10px] text-slate-500 uppercase block font-bold">C2PA CREDENTIALS</span>
+                  <span className={`font-black text-xs block ${result.provenance.c2paPresent ? 'text-blue-700' : 'text-slate-500'}`}>
+                    {result.provenance.c2paPresent 
+                      ? (result.provenance.c2paVerified ? 'Manifest Verified' : 'Marker Present') 
+                      : 'Not Present'}
                   </span>
                 </div>
               </div>
 
+              {result.provenance.notes.length > 0 && (
+                <div className="p-3.5 rounded-xl bg-blue-50/70 border border-blue-200 text-xs text-slate-700 space-y-1.5 font-medium">
+                  <span className="text-blue-950 text-xs block font-bold">Provenance Observations:</span>
+                  <ul className="list-disc list-inside space-y-1">
+                    {result.provenance.notes.map((note, idx) => (
+                      <li key={idx}>{note}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          )}
+
+        </div>
+
+        {/* Right Column: Metadata Inspection & Forensic Signals */}
+        <div className="lg:col-span-5 space-y-5">
+          
+          {/* Metadata Breakdown Panel */}
+          {result.metadataAnalysis && (
+            <div className="rounded-2xl border-2 border-slate-200 bg-white p-6 space-y-4 font-mono shadow-sm">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-200">
+                <h3 className="text-xs font-black text-slate-950 uppercase tracking-wider flex items-center gap-2">
+                  <Activity className="w-4 h-4 text-blue-600" />
+                  <span>Metadata Inspection</span>
+                </h3>
+                <span className="text-xs font-bold text-slate-500">
+                  {result.metadataAnalysis.format} // {result.metadataAnalysis.colorMode}
+                </span>
+              </div>
+
+              {/* Total Pixels */}
+              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex justify-between items-center text-xs">
+                <span className="text-slate-500 text-xs uppercase font-bold">TOTAL PIXEL COUNT</span>
+                <span className="font-black text-slate-950 text-sm">
+                  {(result.metadataAnalysis.dimensions.totalPixels ?? (result.metadataAnalysis.dimensions.width * result.metadataAnalysis.dimensions.height)).toLocaleString()} px
+                </span>
+              </div>
+
               {/* EXIF Fields Table */}
-              <div className="pt-2">
-                <div className="text-xs font-mono font-semibold text-slate-300 mb-2 uppercase tracking-wider">
-                  Available EXIF Fields ({Object.keys(result.metadataAnalysis.exifData || {}).length})
+              <div className="pt-1">
+                <div className="text-xs font-bold text-slate-700 mb-2.5 uppercase tracking-wider flex justify-between">
+                  <span>Embedded EXIF Tags</span>
+                  <span className="text-blue-700 font-extrabold">{Object.keys(result.metadataAnalysis.exifData || {}).length} tags</span>
                 </div>
 
                 {Object.keys(result.metadataAnalysis.exifData || {}).length > 0 ? (
-                  <div className="border border-slate-800 rounded-lg overflow-hidden divide-y divide-slate-800 text-xs">
+                  <div className="border border-slate-200 rounded-xl overflow-hidden divide-y divide-slate-200 text-xs max-h-48 overflow-y-auto">
                     {Object.entries(result.metadataAnalysis.exifData || {}).map(([key, val]) => (
-                      <div key={key} className="p-2 bg-slate-950/40 flex items-center justify-between font-mono">
-                        <span className="text-slate-400">{key}:</span>
-                        <span className="text-white truncate max-w-[180px]">{String(val)}</span>
+                      <div key={key} className="p-2.5 bg-slate-50 flex items-center justify-between">
+                        <span className="text-slate-600 text-xs font-semibold">{key}:</span>
+                        <span className="text-slate-950 text-xs font-bold truncate max-w-[180px]">{String(val)}</span>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <div className="p-3 rounded-lg bg-slate-950/60 border border-slate-800 text-xs text-slate-400">
-                    No EXIF headers were found in this file container.
+                  <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-600 font-medium">
+                    No EXIF camera headers were detected in this image container.
                   </div>
                 )}
               </div>
 
-              {/* Missing Metadata Notice */}
+              {/* Missing Provenance Indicators */}
               {(result.metadataAnalysis.missingMetadata || []).length > 0 && (
-                <div className="p-3 rounded-lg bg-amber-950/20 border border-amber-500/30 text-xs text-amber-300/90 space-y-1.5">
-                  <div className="font-semibold text-amber-300 font-mono text-[11px]">
+                <div className="p-3.5 rounded-xl bg-amber-50/70 border border-amber-300 text-xs text-amber-900 space-y-1">
+                  <div className="font-bold text-xs uppercase">
                     Missing Provenance Indicators:
                   </div>
-                  <ul className="list-disc pl-4 space-y-1 text-[11px] text-slate-300">
+                  <ul className="list-disc pl-4 space-y-0.5 text-slate-800 font-medium">
                     {(result.metadataAnalysis.missingMetadata || []).map((missing, idx) => (
                       <li key={idx}>{missing}</li>
                     ))}
@@ -771,58 +758,58 @@ export const ResultsDashboard: FC<ResultsDashboardProps> = ({
             </div>
           )}
 
-          {/* Evidence Checklist */}
-          <div className="glass-card rounded-2xl border border-slate-800 bg-slate-900/60 p-6 shadow-lg">
-            <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-800">
-              <h3 className="text-sm font-bold text-white font-mono uppercase tracking-wider flex items-center gap-2">
-                <Cpu className="w-4 h-4 text-cyan-400" />
+          {/* Forensic Heuristic Signals Checklist */}
+          <div className="rounded-2xl border-2 border-slate-200 bg-white p-6 space-y-4 font-mono shadow-sm">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-200">
+              <h3 className="text-xs font-black text-slate-950 uppercase tracking-wider flex items-center gap-2">
+                <Cpu className="w-4 h-4 text-blue-600" />
                 <span>Forensic Signals</span>
               </h3>
-              <span className="text-xs font-mono text-slate-400">
-                {result.evidence.length} Heuristics
+              <span className="text-xs font-bold text-slate-500">
+                {result.evidence.length} Heuristics Evaluated
               </span>
             </div>
 
-            <div className="space-y-3">
+            <div className="space-y-2.5">
               {result.evidence.map((item) => {
                 const isSelected = selectedEvidence?.id === item.id;
                 return (
                   <div
                     key={item.id}
                     onClick={() => setSelectedEvidence(item)}
-                    className={`p-3.5 rounded-xl border transition-all cursor-pointer ${
+                    className={`p-3.5 rounded-xl border-2 transition-all cursor-pointer text-left ${
                       isSelected
-                        ? 'bg-cyan-950/30 border-cyan-500/50 shadow-md'
-                        : 'bg-slate-950/40 border-slate-800/80 hover:border-slate-700'
+                        ? 'bg-blue-50/80 border-blue-500 shadow-sm'
+                        : 'bg-slate-50 border-slate-200 hover:border-blue-300'
                     }`}
                   >
-                    <div className="flex items-start justify-between gap-2 mb-1">
-                      <h4 className="text-xs font-bold text-white">
+                    <div className="flex items-start justify-between gap-2 mb-1.5">
+                      <h4 className="text-xs font-black text-slate-950">
                         {item.title}
                       </h4>
-                      <span className={`text-[10px] font-mono px-2 py-0.5 rounded uppercase font-semibold ${
+                      <span className={`text-[10px] px-2 py-0.5 rounded-md uppercase font-extrabold shrink-0 border ${
                         item.severity === 'high'
-                          ? 'bg-red-950/80 text-red-300 border border-red-500/40'
+                          ? 'bg-rose-100 text-rose-900 border-rose-300'
                           : item.severity === 'medium'
-                          ? 'bg-amber-950/80 text-amber-300 border border-amber-500/40'
+                          ? 'bg-amber-100 text-amber-900 border-amber-300'
                           : item.severity === 'clean'
-                          ? 'bg-emerald-950/80 text-emerald-300 border border-emerald-500/40'
-                          : 'bg-slate-800 text-slate-300 border border-slate-700'
+                          ? 'bg-emerald-100 text-emerald-900 border-emerald-300'
+                          : 'bg-slate-200 text-slate-700 border-slate-300'
                       }`}>
                         {item.severity}
                       </span>
                     </div>
 
-                    <p className="text-[11px] text-slate-400 leading-relaxed mb-2">
+                    <p className="text-xs text-slate-700 leading-relaxed font-sans font-medium">
                       {item.summary}
                     </p>
 
                     {isSelected && (
-                      <div className="mt-2.5 pt-2.5 border-t border-slate-800/80 text-[11px] text-slate-300 bg-black/30 p-2.5 rounded-lg space-y-1.5">
-                        <div className="font-semibold text-cyan-300">Technical Context:</div>
-                        <p className="leading-relaxed">{item.details}</p>
+                      <div className="mt-2.5 pt-2 border-t border-slate-200 text-xs text-slate-900 space-y-1 bg-white p-2.5 rounded-lg border border-slate-200">
+                        <div className="font-black text-blue-700 text-xs">Technical Context:</div>
+                        <p className="leading-relaxed text-slate-700 font-sans font-normal">{item.details}</p>
                         {item.visualCue && (
-                          <div className="text-[10px] text-slate-400 italic">
+                          <div className="text-xs text-slate-500 italic">
                             Marker: {item.visualCue}
                           </div>
                         )}
@@ -834,16 +821,16 @@ export const ResultsDashboard: FC<ResultsDashboardProps> = ({
             </div>
           </div>
 
-          {/* Critical Limitations */}
-          <div className="glass-card rounded-2xl border border-slate-800 bg-slate-900/60 p-6 shadow-lg">
-            <h3 className="text-sm font-bold text-white font-mono uppercase tracking-wider mb-3 flex items-center gap-2 text-amber-300">
-              <ShieldAlert className="w-4 h-4 text-amber-400" />
+          {/* Critical Forensic Limitations */}
+          <div className="rounded-2xl border-2 border-amber-300 bg-amber-50/60 p-6 space-y-3 font-mono shadow-sm">
+            <h3 className="text-xs font-black text-amber-950 uppercase tracking-wider flex items-center gap-2">
+              <ShieldAlert className="w-4 h-4 text-amber-700" />
               <span>Forensic Limitations</span>
             </h3>
-            <ul className="space-y-2">
+            <ul className="space-y-2 text-xs text-slate-800 font-medium">
               {result.limitations.map((lim, idx) => (
-                <li key={idx} className="flex items-start gap-2 text-xs text-slate-400 leading-relaxed">
-                  <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0 mt-1.5"></span>
+                <li key={idx} className="flex items-start gap-2 leading-relaxed">
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-600 shrink-0 mt-1.5"></span>
                   <span>{lim}</span>
                 </li>
               ))}
@@ -852,6 +839,28 @@ export const ResultsDashboard: FC<ResultsDashboardProps> = ({
 
         </div>
 
+      </div>
+
+      {/* Bottom Actions Bar */}
+      <div className="pt-6 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4 font-mono text-xs">
+        <div className="text-slate-500 font-semibold">
+          SHA-256 HASH: <span className="text-slate-900 font-bold">{result.sha256Hash}</span>
+        </div>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={onOpenReport}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-300 hover:border-blue-400 text-slate-900 font-bold transition-colors cursor-pointer shadow-2xs font-mono"
+          >
+            <FileText className="w-4 h-4 text-blue-600" />
+            <span>View Full Examination Report</span>
+          </button>
+          <button
+            onClick={onNewAnalysis}
+            className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm active:scale-95 transition-all shadow-md cursor-pointer font-sans"
+          >
+            <span>Analyze Another Image</span>
+          </button>
+        </div>
       </div>
 
     </div>
