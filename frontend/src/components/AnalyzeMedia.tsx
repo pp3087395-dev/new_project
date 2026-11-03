@@ -1,14 +1,14 @@
 import { useState, useRef, useEffect } from 'react';
 import type { FC, DragEvent, ChangeEvent } from 'react';
-import { 
-  UploadCloud, 
-  FileUp, 
-  X, 
-  AlertCircle, 
-  Scan, 
-  Play, 
-  Sparkles, 
-  ShieldCheck, 
+import {
+  UploadCloud,
+  FileUp,
+  X,
+  AlertCircle,
+  Scan,
+  Play,
+  Sparkles,
+  ShieldCheck,
   ArrowRight,
   Loader2,
   RefreshCw
@@ -25,9 +25,9 @@ const MAX_IMAGE_SIZE_MB = 15;
 
 type BackendStatus = 'checking' | 'waking_up' | 'model_loading' | 'online' | 'offline';
 
-export const AnalyzeMedia: FC<AnalyzeMediaProps> = ({ 
+export const AnalyzeMedia: FC<AnalyzeMediaProps> = ({
   onAnalysisComplete,
-  preSelectedSampleId 
+  preSelectedSampleId
 }) => {
   const initialSample = preSelectedSampleId ? SAMPLE_DATASETS.find(s => s.id === preSelectedSampleId) || null : null;
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -54,7 +54,7 @@ export const AnalyzeMedia: FC<AnalyzeMediaProps> = ({
       }
     }
   }
-  
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Backend Polling & Health State
@@ -63,7 +63,7 @@ export const AnalyzeMedia: FC<AnalyzeMediaProps> = ({
   const [pollSecondsElapsed, setPollSecondsElapsed] = useState<number>(0);
   const [pollAttempt, setPollAttempt] = useState<number>(0);
 
-  const runHealthCheck = useRef<() => void>(() => {});
+  const runHealthCheck = useRef<() => void>(() => { });
   const backendUrl = analysisService.getBackendUrl();
 
   // Polling loop: probe /api/ping (60s max wait, 5s retry), then /api/health for model readiness
@@ -262,7 +262,7 @@ export const AnalyzeMedia: FC<AnalyzeMediaProps> = ({
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-6">
-      
+
       {/* Header Section */}
       <div className="text-center mb-9">
         <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-mono bg-blue-100 text-blue-900 border border-blue-300 font-extrabold mb-3 shadow-2xs">
@@ -278,15 +278,14 @@ export const AnalyzeMedia: FC<AnalyzeMediaProps> = ({
       </div>
 
       {/* Backend Connectivity Status Banner */}
-      <div className={`mb-6 p-4 rounded-xl border-2 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs shadow-sm transition-colors ${
-        backendStatus === 'online'
+      <div className={`mb-6 p-4 rounded-xl border-2 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs shadow-sm transition-colors ${backendStatus === 'online'
           ? 'bg-emerald-50/80 border-emerald-300 text-emerald-900'
           : backendStatus === 'model_loading'
-          ? 'bg-blue-50/80 border-blue-300 text-blue-900'
-          : backendStatus === 'waking_up' || backendStatus === 'checking'
-          ? 'bg-amber-50/80 border-amber-300 text-amber-900'
-          : 'bg-rose-50/80 border-rose-300 text-rose-900'
-      }`}>
+            ? 'bg-blue-50/80 border-blue-300 text-blue-900'
+            : backendStatus === 'waking_up' || backendStatus === 'checking'
+              ? 'bg-amber-50/80 border-amber-300 text-amber-900'
+              : 'bg-rose-50/80 border-rose-300 text-rose-900'
+        }`}>
         <div className="flex items-center gap-2.5">
           {backendStatus === 'online' && (
             <span className="w-2.5 h-2.5 rounded-full bg-emerald-600 animate-pulse shrink-0"></span>
@@ -319,11 +318,7 @@ export const AnalyzeMedia: FC<AnalyzeMediaProps> = ({
             )}
             {backendStatus === 'offline' && (
               <span>
-<<<<<<< HEAD
                 <strong>FastAPI Backend Offline:</strong> Unable to connect to <code className="bg-black/40 px-1 py-0.5 rounded font-mono">{backendUrl || '(VITE_API_BASE_URL is not set)'}</code> after 60s. Start locally via <code className="bg-black/40 px-1 py-0.5 rounded font-mono">python -m uvicorn app.main:app</code> or verify your cloud deployment.
-=======
-                <strong className="text-slate-950 font-bold">Backend Offline:</strong> Unable to connect to <code className="bg-white px-1.5 py-0.5 rounded border border-rose-200 text-slate-900 font-bold">{backendUrl}</code>. Start locally via <code className="bg-white px-1.5 py-0.5 rounded border border-rose-200 text-slate-900 font-bold">python -m uvicorn app.main:app</code>.
->>>>>>> 0c62bebb249622b5e819024c106133cc292b68a7
               </span>
             )}
           </div>
@@ -339,13 +334,8 @@ export const AnalyzeMedia: FC<AnalyzeMediaProps> = ({
               <span>Retry Connection</span>
             </button>
           )}
-<<<<<<< HEAD
           <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400">
             API: {backendUrl ? backendUrl.replace(/^https?:\/\//, '') : 'NOT CONFIGURED'}
-=======
-          <span className="text-slate-600 uppercase tracking-wider">
-            PORT: {backendUrl.replace(/^https?:\/\//, '')}
->>>>>>> 0c62bebb249622b5e819024c106133cc292b68a7
           </span>
         </div>
       </div>
@@ -357,7 +347,7 @@ export const AnalyzeMedia: FC<AnalyzeMediaProps> = ({
             <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
             <span className="font-bold">{errorMessage}</span>
           </div>
-          <button 
+          <button
             onClick={() => setErrorMessage(null)}
             className="text-rose-700 hover:text-rose-950 p-1 cursor-pointer"
           >
@@ -372,11 +362,10 @@ export const AnalyzeMedia: FC<AnalyzeMediaProps> = ({
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
-          className={`relative rounded-2xl border-2 border-dashed transition-all p-10 sm:p-14 text-center bg-white shadow-sm ${
-            isDragging
+          className={`relative rounded-2xl border-2 border-dashed transition-all p-10 sm:p-14 text-center bg-white shadow-sm ${isDragging
               ? 'border-blue-500 bg-blue-50/40 ring-4 ring-blue-500/10'
               : 'border-slate-300 hover:border-blue-500 hover:shadow-md'
-          }`}
+            }`}
         >
           {/* Reticle Corner Accents */}
           <div className="reticle-corner-blue-tl" />
@@ -482,7 +471,7 @@ export const AnalyzeMedia: FC<AnalyzeMediaProps> = ({
                 <div className="text-[#707B72] text-[10px] text-center max-w-sm mb-4 font-mono">
                   First execution after server cold start may take 15–30s on CPU.
                 </div>
-                
+
                 {/* Progress Bar */}
                 <div className="w-full max-w-sm bg-[#1D2420] rounded-full h-1.5 overflow-hidden border border-[#303A33]">
                   <div
@@ -540,11 +529,10 @@ export const AnalyzeMedia: FC<AnalyzeMediaProps> = ({
               <div
                 key={sample.id}
                 onClick={() => handleSelectSample(sample)}
-                className={`rounded-xl p-3.5 cursor-pointer border-2 transition-all text-left bg-white relative shadow-2xs hover:shadow-md ${
-                  isSelected
+                className={`rounded-xl p-3.5 cursor-pointer border-2 transition-all text-left bg-white relative shadow-2xs hover:shadow-md ${isSelected
                     ? 'border-blue-600 ring-4 ring-blue-500/10 bg-blue-50/20'
                     : 'border-slate-200 hover:border-blue-400'
-                }`}
+                  }`}
               >
                 <div className="relative aspect-video rounded-lg overflow-hidden mb-2.5 bg-slate-950 border border-slate-800">
                   <img
@@ -553,13 +541,12 @@ export const AnalyzeMedia: FC<AnalyzeMediaProps> = ({
                     className="w-full h-full object-cover"
                   />
                   <div className="absolute top-1.5 left-1.5">
-                    <span className={`text-[10px] font-mono px-2 py-0.5 rounded font-extrabold shadow-sm ${
-                      sample.expectedCategory === 'potentially_manipulated'
+                    <span className={`text-[10px] font-mono px-2 py-0.5 rounded font-extrabold shadow-sm ${sample.expectedCategory === 'potentially_manipulated'
                         ? 'bg-rose-950/90 text-rose-300 border border-rose-700'
                         : sample.expectedCategory === 'no_strong_signs'
-                        ? 'bg-emerald-950/90 text-emerald-300 border border-emerald-700'
-                        : 'bg-amber-950/90 text-amber-300 border border-amber-700'
-                    }`}>
+                          ? 'bg-emerald-950/90 text-emerald-300 border border-emerald-700'
+                          : 'bg-amber-950/90 text-amber-300 border border-amber-700'
+                      }`}>
                       {sample.badge}
                     </span>
                   </div>
