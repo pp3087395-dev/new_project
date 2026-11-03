@@ -53,7 +53,12 @@ app = FastAPI(
 # Configure CORS origins from ALLOWED_ORIGINS env var (comma-separated) with local dev fallback
 raw_allowed_origins = os.environ.get("ALLOWED_ORIGINS", "")
 if raw_allowed_origins.strip():
-    allowed_origins = [o.strip() for o in raw_allowed_origins.split(",") if o.strip()]
+    # Strip spaces and trailing slashes from each configured origin
+    allowed_origins = [
+        o.strip().rstrip("/")
+        for o in raw_allowed_origins.split(",")
+        if o.strip()
+    ]
 else:
     allowed_origins = [
         "http://localhost:5173",
@@ -63,12 +68,16 @@ else:
         "https://new-project-theta-taupe.vercel.app",
     ]
 
+# Do not use allow_origins=["*"] together with allow_credentials=True per CORS spec
+allow_all_origins = "*" in allowed_origins
+allow_credentials = not allow_all_origins
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
-    allow_credentials=True,
+    allow_credentials=allow_credentials,
     allow_methods=["*"],
-    allow_headers=["*"],
+    allow_headers=["*", "ngrok-skip-browser-warning"],
 )
 
 # Register routes

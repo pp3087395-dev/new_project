@@ -43,10 +43,27 @@ export const SAMPLE_DATASETS: SampleMedia[] = [
 export const analysisService = {
   getBackendUrl(): string {
     const envUrl = import.meta.env.VITE_API_BASE_URL;
-    if (envUrl && typeof envUrl === 'string' && envUrl.trim().length > 0) {
-      return envUrl.replace(/\/+$/, '');
+    if (envUrl && typeof envUrl === 'string') {
+      let url = envUrl.trim().replace(/\/+$/, '');
+      if (url && !/^https?:\/\//i.test(url)) {
+        url = `https://${url}`;
+      }
+      return url;
     }
-    return 'http://127.0.0.1:8000';
+    return '';
+  },
+
+  /**
+   * Shared API fetch helper ensuring all backend requests send
+   * the 'ngrok-skip-browser-warning': 'true' header to bypass ngrok's interstitial page.
+   */
+  async apiFetch(url: string, init?: RequestInit): Promise<Response> {
+    const headers = new Headers(init?.headers);
+    headers.set('ngrok-skip-browser-warning', 'true');
+    return fetch(url, {
+      ...init,
+      headers,
+    });
   },
 
   /**
@@ -54,15 +71,17 @@ export const analysisService = {
    * Resolves immediately to check if the server is awake without waiting for model weights.
    */
   async ping(timeoutMs = 4000): Promise<boolean> {
+    const url = `${this.getBackendUrl()}/api/ping`;
     try {
-      const url = `${this.getBackendUrl()}/api/ping`;
-      const res = await fetch(url, { signal: AbortSignal.timeout(timeoutMs) });
+      const res = await this.apiFetch(url, { signal: AbortSignal.timeout(timeoutMs) });
       if (res.ok) {
         const data = await res.json().catch(() => ({}));
         return !!data.ok;
       }
+      console.error(`[TruthLens] Backend status check failed with HTTP ${res.status} (${res.statusText}) at ${url}`);
       return false;
-    } catch {
+    } catch (error: any) {
+      console.error(`[TruthLens] Backend status check error: ${error?.message || error} at ${url}`, error);
       return false;
     }
   },
@@ -78,9 +97,9 @@ export const analysisService = {
     details?: any;
     error?: string;
   }> {
+    const url = `${this.getBackendUrl()}/api/health`;
     try {
-      const url = `${this.getBackendUrl()}/api/health`;
-      const res = await fetch(url, { signal: AbortSignal.timeout(timeoutMs) });
+      const res = await this.apiFetch(url, { signal: AbortSignal.timeout(timeoutMs) });
       if (res.ok) {
         const data = await res.json();
         return {
@@ -91,9 +110,11 @@ export const analysisService = {
           error: data.ai_model_error || undefined,
         };
       }
+      console.error(`[TruthLens] Health check failed with HTTP ${res.status} (${res.statusText}) at ${url}`);
       return { isOnline: false, modelStatus: 'unknown' };
     } catch (e: any) {
-      return { isOnline: false, modelStatus: 'unknown', error: e.message };
+      console.error(`[TruthLens] Health check error: ${e?.message || e} at ${url}`, e);
+      return { isOnline: false, modelStatus: 'unknown', error: e?.message };
     }
   },
 
@@ -171,7 +192,7 @@ export const analysisService = {
 
       let response: Response;
       try {
-        response = await fetch(`${backendUrl}/api/analyze/image`, {
+        response = await this.apiFetch(`${backendUrl}/api/analyze/image`, {
           method: 'POST',
           body: formData,
           signal: AbortSignal.timeout(120000), // 120-second timeout for CPU inference & cold starts

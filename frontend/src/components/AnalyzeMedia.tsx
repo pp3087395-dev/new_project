@@ -320,7 +320,7 @@ export const AnalyzeMedia: FC<AnalyzeMediaProps> = ({
             )}
             {backendStatus === 'offline' && (
               <span>
-                <strong>FastAPI Backend Offline:</strong> Unable to connect to <code className="bg-black/40 px-1 py-0.5 rounded font-mono">{backendUrl}</code> after 60s. Start locally via <code className="bg-black/40 px-1 py-0.5 rounded font-mono">python -m uvicorn app.main:app</code> or verify your cloud deployment.
+                <strong>FastAPI Backend Offline:</strong> Unable to connect to <code className="bg-black/40 px-1 py-0.5 rounded font-mono">{backendUrl || '(VITE_API_BASE_URL is not set)'}</code> after 60s. Start locally via <code className="bg-black/40 px-1 py-0.5 rounded font-mono">python -m uvicorn app.main:app</code> or verify your cloud deployment.
               </span>
             )}
           </div>
@@ -337,7 +337,7 @@ export const AnalyzeMedia: FC<AnalyzeMediaProps> = ({
             </button>
           )}
           <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400">
-            API: {backendUrl.replace(/^https?:\/\//, '')}
+            API: {backendUrl ? backendUrl.replace(/^https?:\/\//, '') : 'NOT CONFIGURED'}
           </span>
         </div>
       </div>
