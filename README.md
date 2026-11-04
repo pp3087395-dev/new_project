@@ -1,201 +1,342 @@
-# TruthLens — AI Deepfake & Media Forensics Platform
+# 🔍 TruthLens — AI-Powered Synthetic Image Detection
 
-> **"Look Beyond What You See."**  
-> An explainable, multi-spectral media forensics inspection platform designed to detect fully AI-generated images with calibrated confidence and transparent uncertainty states.
+**TruthLens** is an AI-powered synthetic image detection platform designed to estimate whether an uploaded image is a real photograph or AI-generated content.
 
----
+With the rapid development of generative AI, distinguishing authentic photographs from synthetic images has become increasingly difficult. TruthLens addresses this challenge using deep learning and image analysis to provide users with an AI-generation probability and a classification result.
 
-## 🌟 Executive Overview
-
-**TruthLens** addresses the challenge of generative synthetic media (diffusion models, GANs) by providing transparent, multi-spectral forensic inspection rather than an opaque binary output. 
-
-Rather than declaring media as definitively "Authentic" or "Fake", TruthLens extracts discrete signals—spatial patch activations via deep Vision Transformers, 2D-FFT frequency domain periodicities, EXIF metadata, and digital provenance tags—and communicates findings probabilistically.
+**Team:** ECHO 404
+**Project Type:** AI/ML + Full-Stack Web Application
 
 ---
 
-## ⚠️ Accuracy and Limits
+## 🚀 Key Features
 
-**No automated AI detector is 100% accurate.** TruthLens estimates whether an image is **fully AI-generated** by modern generative architectures (e.g., Midjourney, DALL-E 3, Stable Diffusion, Flux). 
-
-- **Not an Edit/Enhancement Detector:** The system cannot determine if an authentic photograph was retouched, color-graded, upscaled, or edited with generative fill tools.
-- **Compression Degradation:** Heavy re-compression (e.g., WhatsApp, messaging apps, social networks) and taking screenshots destroy micro-textures and high-frequency spectral cues, which may reduce confidence or produce inconclusive results.
-- **Probabilistic Calibration:** Scores represent neural model activations and must never be treated as legal or definitive proof of authenticity without independent human corroboration.
+* **AI Image Detection:** Analyzes uploaded images using the Smaug AI Image Detector.
+* **Probability Estimation:** Provides an estimated probability that an image is AI-generated.
+* **Image Classification:** Categorizes results as Real or AI-generated.
+* **Image Preprocessing:** Processes uploaded images before model inference.
+* **Model Evaluation:** Includes evaluation using a balanced dataset of real and AI-generated images.
+* **Fine-Tuning:** The project summary documents task-specific fine-tuning of the Smaug model.
+* **Results Dashboard:** Presents image analysis results through a user-friendly interface.
 
 ---
 
-## 🏗️ Architecture & Technology Stack
+## 🧠 How It Works
 
+TruthLens follows this image-analysis workflow:
+
+1. The user uploads an image through the frontend.
+2. The frontend sends the image to the FastAPI backend.
+3. The backend preprocesses the image.
+4. The Smaug detection model analyzes the image.
+5. Model outputs are converted into an AI-generation probability.
+6. The system produces a Real or AI-generated classification.
+7. The results are displayed on the frontend dashboard.
+
+**Workflow:**
+
+```text
+             Upload Image
+                  |
+                  v
+           React Frontend
+                  |
+                  v
+           FastAPI Backend
+                  |
+                  v
+          Image Preprocessing
+                  |
+                  v
+          Smaug AI Detector
+                  |
+                  v
+        AI-Generation Probability
+                  |
+                  v
+        Real / AI-Generated Result
+                  |
+                  v
+            Results Dashboard
 ```
-truthlens/
-├── frontend/                   # React 19 + Vite 8 + TypeScript + Tailwind CSS v4
+
+---
+
+## 🤖 AI Detection Model
+
+TruthLens uses the **Smaug AI Image Detector** as its primary detection model.
+
+The model analyzes visual patterns and characteristics to estimate whether an image is authentic or synthetically generated.
+
+### Prediction Process
+
+```text
+Input Image
+    |
+Image Preprocessing
+    |
+Smaug Model
+    |
+Model Logits
+    |
+Sigmoid Function
+    |
+AI-Generation Probability
+    |
+Final Classification
+```
+
+The model's output is interpreted as follows:
+
+* A probability closer to `0` indicates a higher likelihood of a real image.
+* A probability closer to `1` indicates a higher likelihood of an AI-generated image.
+
+Different crop configurations, including `crops=1` and `crops=3`, have been explored to balance inference speed and detection performance.
+
+---
+
+## 📊 Dataset and Model Evaluation
+
+The project summary documents evaluation using the **OpenSDI evaluation dataset**.
+
+The evaluation dataset contains images associated with multiple image-generation technologies, including:
+
+* FLUX
+* Stable Diffusion 1.5
+* Stable Diffusion 2
+* Stable Diffusion 3
+* Stable Diffusion XL
+
+### Dataset Composition
+
+| Category            | Number of Images |
+| ------------------- | ---------------: |
+| Real Images         |            2,500 |
+| AI-Generated Images |            2,500 |
+| **Total**           |        **5,000** |
+
+Google Drive was used for persistent storage of datasets, models, training logs, and evaluation results.
+
+### Initial Model Performance
+
+The following results are reported for the initial Smaug evaluation:
+
+| Metric    |  Score |
+| --------- | -----: |
+| Accuracy  | 92.96% |
+| Precision | 99.13% |
+| Recall    | 86.68% |
+| F1 Score  | 92.49% |
+
+### Confusion Matrix
+
+| Actual / Predicted |  Real | AI-Generated |
+| ------------------ | ----: | -----------: |
+| Real               | 2,481 |           19 |
+| AI-Generated       |   333 |        2,167 |
+
+These results indicate strong precision, while some challenging AI-generated images were classified as real.
+
+*Note: These figures describe the initial evaluation reported in the project summary. They should not be interpreted as a guarantee of performance on every image or dataset.*
+
+---
+
+## 🔧 Fine-Tuning
+
+The project summary documents further training of the pretrained Smaug model using task-specific data.
+
+Fine-tuning aims to:
+
+* Improve detection accuracy.
+* Reduce false-negative predictions.
+* Improve performance on challenging AI-generated images.
+* Adapt the pretrained model to the project's target data.
+
+### Fine-Tuning Workflow
+
+```text
+Pretrained Smaug Model
+          |
+          v
+    Training Dataset
+          |
+          v
+   Further Training
+          |
+          v
+ Validation & Evaluation
+          |
+          v
+   Best Model Weights
+          |
+          v
+   Backend Integration
+```
+
+The documented best checkpoint path is:
+
+```text
+backend/models/smaug_partial_best.pt
+```
+
+The backend should load this checkpoint for inference when the fine-tuned model is enabled.
+
+---
+
+## 🛠️ Technologies Used
+
+| Category                    | Technologies                        |
+| --------------------------- | ----------------------------------- |
+| Programming Language        | Python                              |
+| Deep Learning               | PyTorch                             |
+| AI Model                    | Smaug AI Image Detector             |
+| Model Ecosystem             | Hugging Face, Sentence Transformers |
+| Backend                     | FastAPI, Uvicorn                    |
+| Frontend                    | React, TypeScript                   |
+| Development                 | Google Colab, Google Drive          |
+| Version Control             | Git, GitHub                         |
+| Frontend Hosting            | Vercel                              |
+| Backend Hosting Experiments | Render                              |
+
+---
+
+## 📁 Project Structure
+
+The repository contains separate frontend and backend components.
+
+```text
+TruthLens/
+│
+├── frontend/
 │   ├── src/
-│   │   ├── components/         # Modular UI Components
-│   │   │   ├── Navbar.tsx             # Header with status badge & tab navigation
-│   │   │   ├── Hero.tsx               # Value proposition & quick-load samples
-│   │   │   ├── LiveScannerDemo.tsx    # Interactive scanner demo with filter toggles
-│   │   │   ├── Features.tsx           # Forensic inspection capabilities
-│   │   │   ├── HowItWorks.tsx         # 3-step pipeline breakdown
-│   │   │   ├── ResponsibleAI.tsx      # Ethics, limitations & probabilistic charter
-│   │   │   ├── AnalyzeMedia.tsx       # Drag-and-drop studio with cold-start polling
-│   │   │   ├── ResultsDashboard.tsx   # Evidence breakdown with 3-way verdict badge
-│   │   │   ├── ExplainabilityGuide.tsx# Educational guide to forensic heuristics
-│   │   │   ├── HistoryDashboard.tsx   # LocalStorage-backed scan audit log
-│   │   │   ├── ReportModal.tsx        # Printable forensic audit report (PDF / JSON)
-│   │   │   └── Footer.tsx             # Privacy disclosure & copyright
-│   │   ├── services/
-│   │   │   ├── analysisService.ts     # API client, 2-tier health check & thumbnails
-│   │   │   └── historyService.ts      # LocalStorage manager with 480px WebP storage
-│   │   ├── types/
-│   │   │   └── index.ts               # Strict TypeScript models
-│   │   ├── App.tsx                    # State coordinator & tab router
-│   │   └── index.css                  # Tailwind v4 theme & print styles
-│   ├── .oxlintrc.json                 # Oxlint linter rules
-│   └── package.json                   # Frontend dependencies
+│   ├── public/
+│   ├── package.json
+│   └── ...
 │
-├── backend/                    # Python 3.10+ + FastAPI + PyTorch CPU + Pillow
+├── backend/
 │   ├── app/
-│   │   ├── routes/
-│   │   │   └── analysis.py            # /api/analyze/image, /api/health, /api/ping
-│   │   ├── services/
-│   │   │   ├── classifier.py          # Unified classifier service (Smaug, SigLIP, Legacy)
-│   │   │   ├── detector.py            # 2D-FFT Fourier & SHA-256 Audit ID generator
-│   │   │   └── provenance.py          # IPTC DigitalSourceType & C2PA tag inspector
-│   │   ├── schemas/
-│   │   │   └── analysis.py            # Pydantic schemas (ForensicAnalysisResponse)
-│   │   └── main.py                    # FastAPI entrypoint with CORS & async lifespan
-│   ├── eval/                          # Evaluation harness & ground-truth benchmark
-│   │   ├── run_eval.py                # 3-way evaluation harness with Wilson CI
-│   │   ├── real/                      # Authentic test photographs (.gitignore)
-│   │   └── fake/                      # AI-generated test images (.gitignore)
-│   ├── tests/                         # Pytest automated test suite (42 tests)
-│   ├── requirements.txt               # Production requirements
-│   ├── requirements-dev.txt           # Testing dependencies (pytest)
-│   ├── Dockerfile                     # Multi-stage production container
-│   └── pytest.ini                     # Pytest configuration
+│   ├── models/
+│   │   └── smaug_partial_best.pt
+│   ├── requirements.txt
+│   └── ...
 │
-├── CHANGES.md                  # Comprehensive step-by-step engineering log
-└── README.md                   # Project documentation
+├── README.md
+└── .gitignore
 ```
 
----
-
-## 🧠 Supported Classifier Backends
-
-TruthLens features a modular backend architecture selectable via the `CLASSIFIER_BACKEND` environment variable:
-
-| Model Backend | Architecture | Parameters | Default Cutoff | Uncertainty Window | Memory (RAM) | Primary Use Case |
-| :--- | :--- | :---: | :---: | :---: | :---: | :--- |
-| **`smaug`** *(Default / Recommended)* | [`abacusai/Smaug-AI-Image-Detector`](https://huggingface.co/abacusai/Smaug-AI-Image-Detector) | 439M | `0.50` | `[0.40, 0.60]` | ~2.7 GB | High-precision production detection; 0.0% false-positive rate on test set. |
-| **`siglip`** *(Lightweight)* | [`Ateeqq/ai-vs-human-image-detector`](https://huggingface.co/Ateeqq/ai-vs-human-image-detector) | 92.9M | `0.40` | `[0.30, 0.50]` | ~885 MB | Resource-constrained hosts (e.g. 1GB–2GB RAM) with multi-view tiling. |
-| **`legacy`** *(Baseline Comparison)* | [`umm-maybe/AI-image-detector`](https://huggingface.co/umm-maybe/AI-image-detector) | 85M | `0.50` | `[0.40, 0.60]` | ~880 MB | Reference baseline; 2022 VQGAN-era ViT showing benchmark regression. |
+*The structure above illustrates the intended organization. Adjust it to match the actual files in the repository.*
 
 ---
 
-## ⚙️ Environment Variables Reference
+## ⚙️ Installation and Setup
 
-| Variable | Scope | Default Value | Description |
-| :--- | :--- | :--- | :--- |
-| `CLASSIFIER_BACKEND` | Backend | `smaug` | Active classifier model: `smaug`, `siglip`, or `legacy`. |
-| `CLASSIFIER_FAKE_THRESHOLD` | Backend | `0.50` (smaug) / `0.40` (siglip) | Decision cutoff probability above which an image is considered FAKE. |
-| `CLASSIFIER_UNCERTAIN_BAND` | Backend | `0.10` | Half-width around cutoff mapped to `INCONCLUSIVE` verdict. |
-| `SMAUG_CROPS` | Backend | `1` | Number of crop evaluations for Smaug (`1`, `2`, or `3`). |
-| `ALLOWED_ORIGINS` | Backend | Localhost origins | Comma-separated CORS allowed origins (e.g. `https://your-app.vercel.app`). |
-| `PORT` | Backend | `8000` | Port for Uvicorn server in Docker / cloud deployments. |
-| `HF_TOKEN` | Backend | *None* | Optional Hugging Face access token for higher download rate limits. |
-| `VITE_API_BASE_URL` | Frontend | `http://127.0.0.1:8000` | Public backend API URL (set in Vercel to your cloud API endpoint). |
+### Prerequisites
 
----
+* Python 3.10 or a compatible version required by the backend dependencies.
+* Node.js and npm.
+* Git.
+* Sufficient memory to load the Smaug model.
 
-## 🚀 Quickstart Guide (Windows PowerShell)
+### 1. Clone the Repository
 
-### 1. Backend Setup & Local Server
+```bash
+git clone <YOUR_GITHUB_REPOSITORY_URL>
+cd TruthLens
+```
 
-```powershell
+### 2. Set Up the Backend
+
+```bash
 cd backend
 
-# Create and activate virtual environment
 python -m venv venv
-.\venv\Scripts\Activate.ps1
-
-# Install runtime dependencies
-pip install -r requirements.txt
-pip install -r requirements-dev.txt
-
-# Run the backend server (defaults to Smaug on port 8000)
-python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
 ```
 
-Verify backend health at: `http://127.0.0.1:8000/api/health`
+Activate the virtual environment.
 
-### 2. Frontend Setup & Local Development
+**Windows:**
 
-```powershell
+```bash
+venv\Scripts\activate
+```
+
+**Linux / macOS:**
+
+```bash
+source venv/bin/activate
+```
+
+Install dependencies:
+
+```bash
+pip install -r requirements.txt
+```
+
+Start the backend:
+
+```bash
+python -m uvicorn app.main:app --reload
+```
+
+### 3. Set Up the Frontend
+
+Open another terminal:
+
+```bash
 cd frontend
-
-# Install dependencies
 npm install
-
-# Start development dev server (Vite)
 npm run dev
 ```
 
-Navigate browser to: `http://localhost:5173`
+Open the local frontend address displayed by Vite in your browser.
+
+*Note: Actual startup commands and environment variables should be checked against the current repository configuration.*
 
 ---
 
-## 🧪 Running Tests & Evaluation
+## 🌐 Deployment
 
-### Automated Test Suite (Pytest)
-```powershell
-cd backend
+The project uses a separate frontend and backend architecture.
 
-# Run fast unit tests (label mapping, EXIF, API status codes, CORS - excludes model):
-python -m pytest -m "not model" -v
+* **Frontend:** Vercel.
+* **Backend:** FastAPI-based service.
+* **Model Hosting:** Requires a host with sufficient memory and computational resources to load Smaug.
 
-# Run full test suite (including model inference, responsiveness & dataset regressions):
-python -m pytest -v
-```
-
-### Frontend Linting & Build Verification
-```powershell
-cd frontend
-
-# Run Oxlint (0 errors, 0 warnings expected):
-npm run lint
-
-# Run TypeScript check and production bundle:
-npm run build
-```
-
-### Model Evaluation Benchmark
-```powershell
-cd backend
-
-# Run evaluation on benchmark dataset (55 images):
-python eval/run_eval.py --backend smaug --threshold 0.50 --uncertain-band 0.10 --use-cache
-python eval/run_eval.py --backend siglip --threshold 0.40 --uncertain-band 0.10 --use-cache
-python eval/run_eval.py --backend legacy --threshold 0.50 --uncertain-band 0.10 --use-cache
-```
+The project has explored Render for backend hosting. Further backend hosting optimization and deployment remain part of the project work.
 
 ---
 
-## 🛡️ Responsible AI Disclosures & Verdict Mapping
+## ⚠️ Limitations
 
-TruthLens maps raw model outputs into three calibrated categories:
-
-1. **`Likely fully AI-generated` (`FAKE`):** Probability exceeds threshold + band ($> 0.60$ for Smaug). Indicates high statistical similarity to generative diffusion training patterns.
-2. **`No signs of full AI generation` (`REAL`):** Probability is below threshold - band ($< 0.40$ for Smaug). Indicates absence of strong generative artifacts; this is **not** proof that the image is authentic or unretouched.
-3. **`Inconclusive` (`INCONCLUSIVE`):** Probability falls inside $[0.40, 0.60]$. The system explicitly withholds judgment on ambiguous, heavily compressed, or borderline media.
-
-### Provenance Clues
-The system inspects EXIF and IPTC XMP metadata for digital source tags (such as `trainedAlgorithmicMedia` or Adobe generator strings) and C2PA manifests. **Provenance clues are presented strictly as supplementary context and never alter the classifier's pixel-level verdict.**
+* AI-enhanced real photographs may be classified as real.
+* Heavy image compression can reduce detection performance.
+* Model predictions are estimates, not definitive proof of authenticity.
+* Model inference requires substantial memory.
+* New image-generation technologies may introduce detection challenges.
 
 ---
 
-## 🗺️ Project Roadmap
+## 🔮 Future Improvements
 
-- [x] **Phase 1: Explainable Forensic UI** — Responsive React dashboard, drag-and-drop studio, 2D-FFT viewer, local history logging, and printable audit reports.
-- [x] **Phase 2: Modern Neural Classifier Integration** — High-accuracy Smaug (439M) and SigLIP (92.9M) backends with dynamic Hugging Face label mapping and auto-oriented PIL pipeline.
-- [x] **Phase 3: Calibrated Uncertainty & Honest Labels** — 3-way verdict boundaries, honest non-absolutist terminology, and IPTC/C2PA provenance inspection.
-- [x] **Phase 4: Latency & Deployment Readiness** — Async non-blocking startup, 2048px downscaling optimization, 2-tier frontend health polling, and containerization.
-- [ ] **Phase 5: Video Keyframe Extraction** — Multi-frame temporal sampling for video deepfake analysis.
+* Video deepfake detection.
+* AI-generated audio detection.
+* Support for additional image-generation models.
+* Faster and more efficient inference.
+* Cloud GPU deployment.
+* Explainable AI visualizations.
+* Multi-model detection and confidence analysis.
+* Continuous model updates as generative AI evolves.
+
+---
+
+## 👥 Team ECHO 404
+
+**Project:** TruthLens — AI-Powered Synthetic Image Detection
+
+Developed as an AI/ML and full-stack web application project.
+
+---
+
+## 📄 License
+
+Add the appropriate license after confirming the licensing terms of the project code, dependencies, and model weights.
